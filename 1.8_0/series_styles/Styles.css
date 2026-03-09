@@ -1,0 +1,20 @@
+.page-wrapper--5HUY2.erc-series {
+  --expandable-section-accent-color-default: var(--series-hero-action-tooltip-color);
+  --carousel-pagination-accent-color: var(--series-hero-action-tooltip-color);
+  --button-accent-color-default: var(--series-hero-action-tooltip-color);
+  --star-rating-controls-accent-color: var(--series-hero-action-tooltip-color);
+  --progress-bar-accent-color: var(--series-hero-action-tooltip-color);
+  --playable-card-hover-accent-color: var(--series-hero-action-tooltip-color);
+  --tooltip-icon-accent-color-default: var(--series-hero-action-tooltip-color);
+  --card-watchlist-label-icon-color: var(--series-hero-action-tooltip-color);
+  --star-rating-short-static-accent-color: var(--series-hero-action-tooltip-color);
+  --playable-card-hover-accent-color-hover: var(--series-hero-action-tooltip-color-hover);
+  --button-accent-color-hover: var(--series-hero-action-tooltip-color-hover);
+  --tooltip-icon-accent-color-hover: var(--series-hero-action-tooltip-color-hover);
+}
+
+
+/*h3.heading--nKNOf.heading--is-xxs--1CKSn.heading--is-family-type-one--GqBzU.title
+{
+    color: var(--series-hero-action-tooltip-color, #ffffffff);
+}*/ 

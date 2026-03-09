@@ -1,0 +1,68 @@
+{
+   "extensionDescription": {
+      "message": "Migliora Crunchyroll: tag filler, etichette formato, punteggi esterni, bandiere lingua e conto alla rovescia episodi."
+   },
+   "headerTitle": {
+      "message": "Opzioni Crunchyroll Better Web"
+   },
+   "featureSettingsTitle": {
+      "message": "Feature Settings"
+   },
+   "homepageSectionsHint": {
+      "message": "Drag To Reorder Within Each Group. Toggle To Show Or Hide."
+   },
+   "homepageSectionsTitle": {
+      "message": "Homepage Sections"
+   },
+   "homepageMovieSectionsTitle": {
+      "message": "Movie Sections"
+   },
+   "homepageSeriesSectionsTitle": {
+      "message": "Series Sections"
+   },
+   "homepageTopSectionTitle": {
+      "message": "Top Section"
+   },
+   "labelHomepageNextSeason": {
+      "message": "Next Season"
+   },
+   "labelHomepageTopMoviesPopular": {
+      "message": "Top Movies Popular"
+   },
+   "labelHomepageTopMoviesReviewed": {
+      "message": "Top Movies Reviewed"
+   },
+   "labelHomepageTopSeriesPopular": {
+      "message": "Top Series Popular"
+   },
+   "labelHomepageTopSeriesReviewed": {
+      "message": "Top Series Reviewed"
+   },
+   "labelAward": {
+      "message": "Tag Premio Anime"
+   },
+   "labelCountdown": {
+      "message": "Mostra Conto alla Rovescia Episodi"
+   },
+   "labelFillers": {
+      "message": "Tag Filler"
+   },
+   "labelFlag": {
+      "message": "Mostra Lingua"
+   },
+   "labelMediaFormat": {
+      "message": "Tag Formato"
+   },
+   "labelNewEpisode": {
+      "message": "Tag Nuovo Episodio"
+   },
+   "labelScore": {
+      "message": "Mostra Punteggio (Score)"
+   },
+   "labelSpoilers": {
+      "message": "Nascondi Spoiler"
+   },
+   "popupTitle": {
+      "message": "Impostazioni Crunchyroll Better Web"
+   }
+}

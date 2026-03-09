@@ -1,0 +1,97 @@
+/* Banner Pelicula*/
+
+.erc-theatrical-banner {
+    display: none;
+}
+
+
+/* Browser Cards Series */
+
+.browse-card-hover--CxFWw {
+    display: none !important;
+}
+
+.browse-card__title--YK28O {
+    -webkit-line-clamp: 1 !important;
+}
+
+.browse-card__poster-wrapper--pU-AW {
+    position: relative;
+    overflow: hidden;
+    outline: 0 solid transparent; /* Necesario para transición limpia */
+}
+
+.browse-card__poster-wrapper--pU-AW:hover {
+    outline: 3px solid white;   /* Borde hacia afuera */
+    border-radius: 4px;         /* Si quieres que siga el borde redondeado */
+}
+
+.browse-card__poster-wrapper--pU-AW::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+
+.browse-card__poster-wrapper--pU-AW:hover::after {
+    opacity: 0.25;
+}
+
+
+/* Playable Cards Series */
+
+@media (min-width: 35.5em) {
+    .playable-card__title--rgmp7 {
+        --max-lines: 1 !important;
+    }
+
+    .playable-card__hover-info--OueGA {
+        display: none;
+    }
+
+    .playable-card__thumbnail-wrapper--BkWZo {
+        position: relative;
+        overflow: hidden;
+    }
+}
+
+.playable-card__thumbnail-wrapper--BkWZo {
+    position: relative;
+    overflow: hidden;
+    outline: 0 solid transparent;
+}
+
+.playable-card__thumbnail-wrapper--BkWZo:hover {
+    outline: 3px solid white;   /* Borde hacia afuera */
+    border-radius: 4px;
+}
+
+.playable-card__thumbnail-wrapper--BkWZo::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+
+.playable-card__thumbnail-wrapper--BkWZo:hover::after {
+    opacity: 0.25;
+}
+
+
+/* Featured Music */
+
+.erc-featured-music:not(#mi-carrusel-personalizado) {
+    display: none !important;
+}

@@ -1,0 +1,68 @@
+{
+  "extensionDescription": {
+    "message": "Melhore o Crunchyroll: etiquetas filler, formato, pontuações externas, bandeiras de idioma e contagem regressiva de episódios."
+  },
+  "popupTitle": {
+    "message": "Configurações do Crunchyroll Better Web"
+  },
+  "headerTitle": {
+    "message": "Opções do Crunchyroll Better Web"
+  },
+  "featureSettingsTitle": {
+    "message": "Feature Settings"
+  },
+  "homepageSectionsHint": {
+    "message": "Drag To Reorder Within Each Group. Toggle To Show Or Hide."
+  },
+  "homepageSectionsTitle": {
+    "message": "Homepage Sections"
+  },
+  "homepageMovieSectionsTitle": {
+    "message": "Movie Sections"
+  },
+  "homepageSeriesSectionsTitle": {
+    "message": "Series Sections"
+  },
+  "homepageTopSectionTitle": {
+    "message": "Top Section"
+  },
+  "labelHomepageNextSeason": {
+    "message": "Next Season"
+  },
+  "labelHomepageTopMoviesPopular": {
+    "message": "Top Movies Popular"
+  },
+  "labelHomepageTopMoviesReviewed": {
+    "message": "Top Movies Reviewed"
+  },
+  "labelHomepageTopSeriesPopular": {
+    "message": "Top Series Popular"
+  },
+  "labelHomepageTopSeriesReviewed": {
+    "message": "Top Series Reviewed"
+  },
+  "labelSpoilers": {
+    "message": "Ocultar Spoilers"
+  },
+  "labelFillers": {
+    "message": "Etiqueta de Filler"
+  },
+  "labelMediaFormat": {
+    "message": "Etiqueta de Formato"
+  },
+  "labelAward": {
+    "message": "Etiqueta de Prêmio Anime"
+  },
+  "labelScore": {
+    "message": "Mostrar Pontuação"
+  },
+  "labelFlag": {
+    "message": "Mostrar Idioma"
+  },
+  "labelCountdown": {
+    "message": "Mostrar Contagem Regressiva de Episódios"
+  },
+  "labelNewEpisode": {
+    "message": "Etiqueta de Novo Episódio"
+  }
+}

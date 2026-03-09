@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title id="homepage-window-title">Homepage Dashboard</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cal+Sans&family=Michroma&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Cal Sans', sans-serif;
+            width: 360px;
+            padding: 0;
+            margin: 0;
+            color: #E0E0E0;
+            background-color: #121212;
+        }
+
+        .cr-popup {
+            background-image: url('https://cdn.i.haymarketmedia.asia/?n=campaign-asia%2Fcontent%2F20240719041444_Untitled+design+(12).png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cr-popup::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.78);
+            z-index: 1;
+        }
+
+        .cr-popup-inner {
+            padding: 18px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .back-button {
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            color: #FFFFFF;
+            border-radius: 999px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .title-block {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .header {
+            color: #FF7D00;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+        }
+
+        .subcopy {
+            color: rgba(255, 255, 255, 0.72);
+            font-family: 'Michroma', sans-serif;
+            font-size: 10px;
+            line-height: 1.5;
+            margin: 6px 0 0;
+        }
+
+        .section-list {
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .section-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            transition: background-color 0.15s ease, opacity 0.15s ease;
+        }
+
+        .section-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .drag-handle {
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 15px;
+            line-height: 1;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .section-copy {
+            min-width: 0;
+        }
+
+        .section-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        .section-meta {
+            color: rgba(255, 255, 255, 0.58);
+            font-family: 'Michroma', sans-serif;
+            font-size: 7px;
+            margin-top: 3px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #616161;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #FF7D00;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .section-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .section-item.is-dragging {
+            opacity: 0.45;
+        }
+
+        .section-item.drag-target-before {
+            box-shadow: inset 0 2px 0 #FF7D00;
+        }
+
+        .section-item.drag-target-after {
+            box-shadow: inset 0 -2px 0 #FF7D00;
+        }
+
+        .empty-state {
+            color: rgba(255, 255, 255, 0.72);
+            font-family: 'Michroma', sans-serif;
+            font-size: 10px;
+            line-height: 1.6;
+            padding-top: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cr-popup">
+        <div class="cr-popup-inner">
+            <div class="toolbar">
+                <button class="back-button" id="back-button" type="button">Back</button>
+                <div class="title-block">
+                    <h1 class="header" id="homepage-header-title">Homepage Dashboard</h1>
+                    <p class="subcopy" id="homepage-header-copy">Manage Every Homepage Section. Any New Or Unmapped Sections Follow The Fallback Row.</p>
+                </div>
+            </div>
+
+            <div class="section-list" id="homepage-layout-list"></div>
+            <p class="empty-state" id="homepage-empty-state" hidden>Open The Crunchyroll Homepage Once To Discover Built-In Sections, Then Reopen This View.</p>
+        </div>
+    </div>
+
+    <script src="../shared/homepageSections.js"></script>
+    <script src="homepage.js"></script>
+</body>
+</html>

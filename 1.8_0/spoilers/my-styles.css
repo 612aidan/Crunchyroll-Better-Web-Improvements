@@ -1,0 +1,7 @@
+.erc-playable-collection.state-wide-layout .playable-thumbnail__image--AgM1B {
+  filter: blur(8px);
+}
+
+erc-watch-more-episodes .playable-thumbnail__image--AgM1B {
+    filter: blur(5px);
+}

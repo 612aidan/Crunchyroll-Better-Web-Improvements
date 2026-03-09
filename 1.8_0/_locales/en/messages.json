@@ -1,0 +1,98 @@
+{
+   "extensionDescription": {
+      "message": "Enhance Crunchyroll: filler tags, format labels, external scores, language flags, and episode countdown."
+   },
+   "headerTitle": {
+      "message": "Crunchyroll Better Web Options"
+   },
+   "featureSettingsTitle": {
+      "message": "Feature Settings"
+   },
+   "backButton": {
+      "message": "Back"
+   },
+   "editHomepageLayoutButton": {
+      "message": "Edit Homepage Layout"
+   },
+   "editHomepageLayoutHint": {
+      "message": "Toggle, reorder, and manage built-in and custom homepage sections."
+   },
+   "homepageDashboardHint": {
+      "message": "Manage Every Homepage Section. Any New Or Unmapped Sections Follow The Fallback Row."
+   },
+   "homepageDashboardTitle": {
+      "message": "Homepage Dashboard"
+   },
+   "homepageDiscoveryEmpty": {
+      "message": "Open The Crunchyroll Homepage Once To Discover Built-In Sections, Then Reopen This View."
+   },
+   "homepageSectionTypeBuiltin": {
+      "message": "Built-In Section"
+   },
+   "homepageSectionTypeCustom": {
+      "message": "Custom Section"
+   },
+   "homepageSectionTypeFallback": {
+      "message": "Fallback Bucket"
+   },
+   "homepageSectionsHint": {
+      "message": "Drag To Reorder Within Each Group. Toggle To Show Or Hide."
+   },
+   "homepageSectionsTitle": {
+      "message": "Homepage Sections"
+   },
+   "homepageMovieSectionsTitle": {
+      "message": "Movie Sections"
+   },
+   "homepageSeriesSectionsTitle": {
+      "message": "Series Sections"
+   },
+   "homepageTopSectionTitle": {
+      "message": "Top Section"
+   },
+   "labelHomepageNextSeason": {
+      "message": "Next Season"
+   },
+   "labelHomepageTopMoviesPopular": {
+      "message": "Top Movies Popular"
+   },
+   "labelHomepageTopMoviesReviewed": {
+      "message": "Top Movies Reviewed"
+   },
+   "labelHomepageTopSeriesPopular": {
+      "message": "Top Series Popular"
+   },
+   "labelHomepageTopSeriesReviewed": {
+      "message": "Top Series Reviewed"
+   },
+   "labelAward": {
+      "message": "Anime Award Tag"
+   },
+   "labelCountdown": {
+      "message": "Show Episode Countdown"
+   },
+   "labelFillers": {
+      "message": "Filler Tag"
+   },
+   "labelFlag": {
+      "message": "Show Language"
+   },
+   "labelMediaFormat": {
+      "message": "Format Tag"
+   },
+   "labelNewEpisode": {
+      "message": "New Episode Tag"
+   },
+   "labelRemoveCrunchyrollAds": {
+      "message": "Remove Crunchyroll Ads"
+   },
+   "labelScore": {
+      "message": "Show Score"
+   },
+   "labelSpoilers": {
+      "message": "Hide Spoilers"
+   },
+   "popupTitle": {
+      "message": "Crunchyroll Better Web Settings"
+   }
+}

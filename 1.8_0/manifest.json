@@ -1,0 +1,153 @@
+{
+   "action": {
+      "default_icon": {
+         "48": "icon/icon48.png"
+      },
+      "default_popup": "popup/popup.html",
+      "default_title": "__MSG_headerTitle__"
+   },
+   "background": {
+      "service_worker": "background/background.js"
+   },
+   "content_scripts": [ {
+      "js": [ "homepage/hideHeroCarousel.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_start"
+   }, {
+      "js": [ "anime_seasons/seasonselector.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "themovieDB/one_piece_ratings.js", "themovieDB/ratingepisode.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "newepisode/nuevoepisodio.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [ "anime_seasons/seasons.css" ],
+      "js": [ "anime_seasons/SeasonsData.js", "anime_seasons/seasons.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "shared/homepageSections.js", "nextseason/nextSeasonCollection.js", "homepage/homepageLayoutManager.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "WeeklyCounter/countdownSerie.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "WeeklyCounter/countdown.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [ "flags/footer.css" ],
+      "js": [ "flags/Etiquetaidioma.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "score/Score.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "btonsort/BtonSort.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "filter/Filtros.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "filter/EliminarFiltrosViejos.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "cards_movies/CustomCards.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "shared/homepageSections.js", "top10_items/TopSeries.js", "homepage/homepageLayoutManager.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "shared/homepageSections.js", "top10_items/TopMovies.js", "homepage/homepageLayoutManager.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "calendar/CalendarWeb.js" ],
+      "matches": [ "https://www.crunchyroll.com/*/simulcastcalendar*", "https://www.crunchyroll.com/simulcastcalendar*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "songs/OPsEDs.js", "songs/MusicCarrusel.js", "songs/Etiqueta_Songs.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "header/HeaderBotones.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [ "series_styles/Styles.css" ],
+      "js": [ "series_styles/SeriesThemesColors.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "js": [ "filter/FiltroHorizontal.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "js": [ "filter/OcultarFiltro.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "js": [ "header/HeaderPersistente.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "css": [ "episodes/EstilosEpsiodios.css" ],
+      "js": [ "episodes/LogosPersonalizados.js", "episodes/MusicCaps.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_start"
+   }, {
+      "js": [ "spoilers/OcultarSpoilers.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_start"
+   }, {
+      "js": [ "filler_episodes/episode_data.js", "filler_episodes/AnimeFiller.js", "filler_episodes/BtnsShowHide.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_start"
+   }, {
+      "all_frames": true,
+      "js": [ "format_etiqueta/AnimeFormatoDB.js", "format_etiqueta/EtiquetaFormato.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "all_frames": true,
+      "js": [ "award_etiqueta/AnimeAwardDB.js", "award_etiqueta/EtiquetaAward.js" ],
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "run_at": "document_idle"
+   } ],
+   "default_locale": "en",
+   "description": "__MSG_extensionDescription__",
+   "host_permissions": [ "https://ipinfo.io/", "https://api.jikan.moe/*", "https://api.themoviedb.org/*" ],
+   "icons": {
+      "128": "icon/icon128.png",
+      "16": "icon/icon16.png",
+      "256": "icon/icon256.png",
+      "32": "icon/icon32.png",
+      "48": "icon/icon48.png",
+      "512": "icon/icon512.png",
+      "64": "icon/icon64.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkzd1z98QWVAvTQht9bQPSCM1RqrlVPLPRDs51TyHQrAT8chY0lK5xOKfS0Vo2ALcb1Lxrc8FGv/hvKe25HcFawNZcP77SUjc84X3syGIUFKHAdpE4US6hg88KDaKKRC+o+lrOCLDed1hj/rrrdmEyuQej/7BRS+crZqUPooPEYjbKDjbbga3SMfOV3YfcMIM8IOVMoGiZzKE8Pf7Mb6+w+yVEG6K+PCBj6fZc3FO3HpmI931P6dLpGuP+vbuHYk97QjI8PmAXQZi4zxE118ZIdlxmvtRquw7TXdtMWwYDy9Yb/VXcswYZ/IpcdDcOVY2kz41QrqZM949UZKT2HVFXwIDAQAB",
+   "manifest_version": 3,
+   "name": "Crunchyroll Better Web",
+   "permissions": [ "storage" ],
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "1.8",
+   "web_accessible_resources": [ {
+      "matches": [ "https://www.crunchyroll.com/*" ],
+      "resources": [ "database/animeDB.json", "database/animeFall2025DB.json", "database/animeMoviesDB.json", "database/NewCardsCR.json", "database/ContdownDB.json" ]
+   } ]
+}

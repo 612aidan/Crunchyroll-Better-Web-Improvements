@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title id="popup-window-title">Crunchyroll Better Web Settings</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cal+Sans&family=Michroma&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Cal Sans', sans-serif;
+            width: 320px;
+            padding: 0;
+            margin: 0;
+            color: #E0E0E0;
+            background-color: #121212;
+        }
+
+        .cr-popup {
+            background-image: url('https://cdn.i.haymarketmedia.asia/?n=campaign-asia%2Fcontent%2F20240719041444_Untitled+design+(12).png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cr-popup::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.76);
+            z-index: 1;
+        }
+
+        .cr-popup-inner {
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            color: #FF7D00;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+        }
+
+        .section-heading {
+            color: #FFD29F;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            margin: 18px 0 10px;
+            text-transform: uppercase;
+        }
+
+        .nav-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 0;
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            background: transparent;
+            color: #FFFFFF;
+            cursor: pointer;
+            box-sizing: border-box;
+            text-align: left;
+        }
+
+        .nav-row:hover .nav-row-title,
+        .nav-row:hover .nav-row-chevron {
+            color: #FF9C33;
+        }
+
+        .nav-row-main {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .nav-row-title {
+            color: #FFFFFF;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .nav-row-copy {
+            color: rgba(255, 255, 255, 0.8);
+            font-family: 'Michroma', sans-serif;
+            font-size: 8px;
+            line-height: 1.5;
+            margin-top: 3px;
+        }
+
+        .nav-row-chevron {
+            color: rgba(255, 255, 255, 0.74);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: color 0.2s ease;
+        }
+
+        .nav-row-chevron svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .switch-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: 14px;
+        }
+
+        .switch-container:last-child {
+            border-bottom: none;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #616161;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #FF7D00;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #FF7D00;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body>
+    <div class="cr-popup">
+        <div class="cr-popup-inner">
+            <div class="header" id="header-title">Crunchyroll Better Web Options</div>
+
+            <div class="section-heading" id="homepage-dashboard-title">Homepage Dashboard</div>
+            <button class="nav-row" id="open-homepage-settings" type="button">
+                <span class="nav-row-main">
+                    <span class="nav-row-title" id="open-homepage-settings-label">Edit Homepage Layout</span>
+                    <span class="nav-row-copy" id="open-homepage-settings-copy">Toggle, reorder, and manage built-in and custom homepage sections.</span>
+                </span>
+                <span class="nav-row-chevron" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img">
+                        <path fill="currentColor" d="M9.4 6 8 7.4l4.6 4.6L8 16.6 9.4 18l6-6z"></path>
+                    </svg>
+                </span>
+            </button>
+
+            <div class="switch-container">
+                <span id="switch-label-remove-ads">Remove Crunchyroll Ads</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-remove-ads" data-setting="removeCrunchyrollAds">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-container">
+                <span id="switch-label-hide-hero-carousel">Hide Hero Carousel</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-hide-hero-carousel" data-setting="hideHeroCarousel">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="section-heading" id="feature-settings-title">Feature Settings</div>
+
+            <div class="switch-container">
+                <span id="switch-label-spoilers">Hide Spoilers</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-spoilers" data-setting="hideSpoilers">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-container">
+                <span id="switch-label-fillers">Filler Tag</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-fillers" data-setting="fillerLabel" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-container">
+                <span id="switch-label-media">Format Tag</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-media" data-setting="mediaLabel" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-container">
+                <span id="switch-label-award">Anime Award Tag</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-award" data-setting="awardLabel" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-container">
+                <span id="switch-label-score">Show Score</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-score" data-setting="scoreLabel" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-container">
+                <span id="switch-label-flag">Show Language</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-flag" data-setting="flagLabel" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-container">
+                <span id="switch-label-countdown">Show Episode Countdown</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-countdown" data-setting="countdownLabel" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-container">
+                <span id="switch-label-new-episode">New Episode Tag</span>
+                <label class="switch">
+                    <input type="checkbox" id="switch-new-episode" data-setting="newEpisodeLabel">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
