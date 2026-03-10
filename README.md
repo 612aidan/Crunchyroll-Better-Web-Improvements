@@ -1,4 +1,4 @@
-# Crunchyroll Better Web
+# Crunchyroll Better Web Improvements
 
 This project builds on an extension originally made by [Conscious_Bell_8765](https://www.reddit.com/user/Conscious_Bell_8765/), published as [Crunchyroll Better Web on the Chrome Web Store](https://chromewebstore.google.com/detail/crunchyroll-better-web/fehhjmlpnknlielfademfbbpkicjlfdh?hl=en-US&utm_source=ext_sidebar).
 
@@ -39,4 +39,4 @@ If you want the original release, you can find it here: [Crunchyroll Better Web 
 
 ## Credit
 
-Credit for the original extension concept and base work goes to [Conscious_Bell_8765](https://www.reddit.com/user/Conscious_Bell_8765/). This repository is an updated and extended version of the original [Chrome Web Store release](https://chromewebstore.google.com/detail/crunchyroll-better-web/fehhjmlpnknlielfademfbbpkicjlfdh?hl=en-US&utm_source=ext_sidebar), focused on keeping it working with newer Crunchyroll behavior and adding features I personally wanted.
+Credit for the original extension and base work goes to [Conscious_Bell_8765](https://www.reddit.com/user/Conscious_Bell_8765/). This repository is an updated and extended version of the original [Chrome Web Store release](https://chromewebstore.google.com/detail/crunchyroll-better-web/fehhjmlpnknlielfademfbbpkicjlfdh?hl=en-US&utm_source=ext_sidebar), focused on keeping it working with newer Crunchyroll behavior and adding features I personally wanted.
