@@ -75,6 +75,44 @@ let collectionRetryBlockedUntil = 0;
 let hasLoggedCollectionFailure = false;
 let homepageSectionsConfig = homepageSectionsShared.getDefaultHomepageSections();
 let previousEnabledState = null;
+let remountObserver = null;
+let remountTimeout = null;
+let isContextInvalidated = false;
+
+function isExtensionContextValid() {
+    if (isContextInvalidated) {
+        return false;
+    }
+
+    try {
+        return Boolean(chrome?.runtime?.id);
+    } catch (error) {
+        if (String(error?.message || error).includes('Extension context invalidated')) {
+            isContextInvalidated = true;
+            return false;
+        }
+
+        throw error;
+    }
+}
+
+function runWithValidContext(callback) {
+    if (!isExtensionContextValid()) {
+        return false;
+    }
+
+    try {
+        callback();
+        return true;
+    } catch (error) {
+        if (String(error?.message || error).includes('Extension context invalidated')) {
+            isContextInvalidated = true;
+            return false;
+        }
+
+        throw error;
+    }
+}
 
 function getCollectionLanguage() {
     const urlPath = window.location.pathname;
@@ -430,6 +468,10 @@ function setupCarouselLogic(carouselContainer, track) {
 }
 
 async function loadSeasonCollectionData() {
+    if (!isExtensionContextValid()) {
+        throw new Error('Extension context invalidated');
+    }
+
     const response = await chrome.runtime.sendMessage({ action: 'fetchNextSeasonCatalog' });
     if (!response?.success) {
         throw new Error(response?.error || 'Failed to load season collection data.');
@@ -578,7 +620,44 @@ function getStagingContainer() {
     return container;
 }
 
+function hasMissingEnabledCollection() {
+    return isSectionEnabled() && !document.querySelector(`[data-t="${COLLECTION_DATA_T}"]`);
+}
+
+function scheduleRemountCheck() {
+    if (remountTimeout) {
+        clearTimeout(remountTimeout);
+    }
+
+    remountTimeout = setTimeout(() => {
+        remountTimeout = null;
+
+        if (!hasMissingEnabledCollection()) {
+            return;
+        }
+
+        console.log('ℹ️ Next Season section was removed from the DOM. Remounting it.');
+        insertCustomCollection();
+    }, 150);
+}
+
+function startRemountObserver() {
+    if (remountObserver || !document.body) {
+        return;
+    }
+
+    remountObserver = new MutationObserver(() => {
+        scheduleRemountCheck();
+    });
+
+    remountObserver.observe(document.body, { childList: true, subtree: true });
+}
+
 async function insertCustomCollection() {
+    if (!isExtensionContextValid()) {
+        return null;
+    }
+
     if (collectionInsertPromise || Date.now() < collectionRetryBlockedUntil) {
         return collectionInsertPromise;
     }
@@ -617,6 +696,11 @@ async function insertCustomCollection() {
             collectionRetryBlockedUntil = 0;
             console.log('✅ Next Season section prepared for the homepage layout manager.');
         } catch (error) {
+            if (String(error?.message || error).includes('Extension context invalidated')) {
+                isContextInvalidated = true;
+                return;
+            }
+
             collectionRetryBlockedUntil = Date.now() + INSERT_FAILURE_COOLDOWN_MS;
             if (!hasLoggedCollectionFailure) {
                 console.warn(`⚠️ Failed to load the Next Season collection: ${error.message}`);
@@ -652,15 +736,24 @@ function initializePersistence() {
     observer.observe(targetNode, { childList: true, subtree: true });
 }
 
-chrome.storage.local.get([HOMEPAGE_SECTIONS_STORAGE_KEY], (settings) => {
+runWithValidContext(() => chrome.storage.local.get([HOMEPAGE_SECTIONS_STORAGE_KEY], (settings) => {
+    if (!isExtensionContextValid()) {
+        return;
+    }
+
     homepageSectionsConfig = homepageSectionsShared.normalizeHomepageSections(
         settings[HOMEPAGE_SECTIONS_STORAGE_KEY]
     );
     previousEnabledState = getEnabledStateSignature(homepageSectionsConfig);
+    startRemountObserver();
     initializePersistence();
-});
+}));
 
-chrome.storage.onChanged.addListener((changes, areaName) => {
+runWithValidContext(() => chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (!isExtensionContextValid()) {
+        return;
+    }
+
     if (areaName !== 'local' || !changes[HOMEPAGE_SECTIONS_STORAGE_KEY]) {
         return;
     }
@@ -675,5 +768,6 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     }
 
     previousEnabledState = nextEnabledState;
+    startRemountObserver();
     refreshCollection();
-});
+}));

@@ -325,6 +325,56 @@
         return document.querySelector(DYNAMIC_FEED_WRAPPER_SELECTOR);
     }
 
+    function findLayoutRoot() {
+        const dynamicFeedWrapper = getDynamicFeedWrapper();
+        if (dynamicFeedWrapper instanceof HTMLElement) {
+            return {
+                container: dynamicFeedWrapper,
+                usesDynamicFeedWrapper: true
+            };
+        }
+
+        const builtinSections = Array.from(document.querySelectorAll(BUILTIN_SECTION_WRAPPER_SELECTOR))
+            .filter((element) => isBuiltinHomepageSection(element) && isVisibleElement(element));
+        const parentCounts = new Map();
+
+        builtinSections.forEach((section) => {
+            const parent = section.parentElement;
+            if (!(parent instanceof HTMLElement)) {
+                return;
+            }
+
+            parentCounts.set(parent, (parentCounts.get(parent) || 0) + 1);
+        });
+
+        let bestContainer = null;
+        let bestCount = 0;
+
+        parentCounts.forEach((count, parent) => {
+            if (count > bestCount) {
+                bestContainer = parent;
+                bestCount = count;
+            }
+        });
+
+        if (bestContainer instanceof HTMLElement) {
+            return {
+                container: bestContainer,
+                usesDynamicFeedWrapper: false
+            };
+        }
+
+        const mainElement = document.querySelector('main');
+        if (mainElement instanceof HTMLElement) {
+            return {
+                container: mainElement,
+                usesDynamicFeedWrapper: false
+            };
+        }
+
+        return null;
+    }
+
     function getStagingContainer() {
         return document.getElementById(HOMEPAGE_STAGING_CONTAINER_ID);
     }
@@ -772,14 +822,16 @@
         bindContinueWatchingCarousel(sectionElement, track);
     }
 
-    function collectHomepageSections() {
-        const wrapper = getDynamicFeedWrapper();
-        if (!wrapper) {
-            logLayoutDebug('dynamic-feed-wrapper not found', null);
+    function collectHomepageSections(layoutContainer = null) {
+        const container = layoutContainer instanceof HTMLElement
+            ? layoutContainer
+            : findLayoutRoot()?.container;
+        if (!(container instanceof HTMLElement)) {
+            logLayoutDebug('Homepage Layout Container Not Found', null);
             return [];
         }
 
-        const directChildren = Array.from(wrapper.children).filter((child) => child instanceof HTMLElement);
+        const directChildren = Array.from(container.children).filter((child) => child instanceof HTMLElement);
         const stagingChildren = Array.from(getStagingContainer()?.children || []).filter((child) => child instanceof HTMLElement);
         const candidateElements = [
             ...directChildren.filter((child) => child.hasAttribute('data-crbw-homepage-section') || isBuiltinHomepageSection(child)),
@@ -799,6 +851,7 @@
             });
 
         logLayoutDebug('Collected homepage sections', {
+            containerClassName: container.className || container.tagName,
             directChildCount: directChildren.length,
             stagingChildCount: stagingChildren.length,
             sectionCount: sections.length,
@@ -858,12 +911,14 @@
                 HIDE_HERO_CAROUSEL_SETTING_KEY
             ],
             (items) => {
-                const wrapper = getDynamicFeedWrapper();
+                const layoutRoot = findLayoutRoot();
+                const wrapper = layoutRoot?.container;
                 const hideHeroCarouselEnabled = items[HIDE_HERO_CAROUSEL_SETTING_KEY] === true;
                 logLayoutDebug('Homepage Settings Snapshot', {
                     hideHeroCarouselEnabled,
                     removeAdsEnabled: items[REMOVE_CRUNCHYROLL_ADS_SETTING_KEY] === true,
-                    hasWrapper: wrapper instanceof HTMLElement
+                    hasWrapper: wrapper instanceof HTMLElement,
+                    usesDynamicFeedWrapper: layoutRoot?.usesDynamicFeedWrapper === true
                 });
 
                 applyHeroCarouselVisibility(hideHeroCarouselEnabled);
@@ -874,7 +929,7 @@
 
                 logContinueWatchingProbe(wrapper);
 
-                const discoveredSections = collectHomepageSections();
+                const discoveredSections = collectHomepageSections(wrapper);
                 const discoveredSignature = JSON.stringify(
                     discoveredSections.map((section) => ({
                         id: section.id,
@@ -896,7 +951,7 @@
                 const removeAdsEnabled = items[REMOVE_CRUNCHYROLL_ADS_SETTING_KEY] === true;
                 const wrapperDisplay = window.getComputedStyle(wrapper).display;
 
-                if (wrapperDisplay !== 'flex') {
+                if (layoutRoot?.usesDynamicFeedWrapper && wrapperDisplay !== 'flex') {
                     wrapper.style.display = 'flex';
                     wrapper.style.flexDirection = 'column';
                 }
@@ -932,11 +987,39 @@
                     .filter((section) => section.element.style.display !== 'none')
                     .sort((left, right) => Number(left.element.style.order || 0) - Number(right.element.style.order || 0));
 
-                orderedVisibleSections.forEach((section) => {
-                    if (section.element.parentElement !== wrapper) {
-                        wrapper.appendChild(section.element);
+                if (layoutRoot?.usesDynamicFeedWrapper) {
+                    orderedVisibleSections.forEach((section) => {
+                        if (section.element.parentElement !== wrapper) {
+                            wrapper.appendChild(section.element);
+                        }
+                    });
+                } else {
+                    discoveredSections.forEach((section) => {
+                        if (section.element.parentElement === wrapper) {
+                            section.element.style.display = 'none';
+                        }
+                    });
+
+                    const fragment = document.createDocumentFragment();
+                    orderedVisibleSections.forEach((section) => {
+                        section.element.style.display = '';
+                        fragment.appendChild(section.element);
+                    });
+
+                    const managedElements = new Set(
+                        discoveredSections
+                            .filter((section) => section.element.parentElement === wrapper)
+                            .map((section) => section.element)
+                    );
+                    const referenceElement = Array.from(wrapper.children)
+                        .find((child) => !managedElements.has(child)) || null;
+
+                    if (referenceElement) {
+                        wrapper.insertBefore(fragment, referenceElement);
+                    } else {
+                        wrapper.appendChild(fragment);
                     }
-                });
+                }
 
                 orderedVisibleSections.forEach((section) => {
                     if (
