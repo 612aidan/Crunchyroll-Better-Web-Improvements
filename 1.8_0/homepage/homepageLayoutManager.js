@@ -625,15 +625,17 @@
                 flex: 0 0 auto;
                 transition: opacity 120ms ease, background 120ms ease;
                 z-index: 1;
+                position: absolute;
+                top: 102px;
+                transform: translateY(-50%);
             }
 
-            .crbw-continue-watching-arrow:hover:not(:disabled) {
+            .crbw-continue-watching-arrow:hover {
                 background: rgba(35, 37, 45, 0.96);
             }
 
-            .crbw-continue-watching-arrow:disabled {
-                opacity: 0.35;
-                cursor: default;
+            .crbw-continue-watching-arrow[hidden] {
+                display: none !important;
             }
 
             .crbw-continue-watching-arrow span {
@@ -641,9 +643,17 @@
                 line-height: 1;
             }
 
+            .crbw-continue-watching-arrow-left {
+                left: -56px;
+            }
+
+            .crbw-continue-watching-arrow-right {
+                right: -56px;
+            }
+
             @media (max-width: 49.99em) {
-                .crbw-continue-watching-carousel-content {
-                    gap: 10px;
+                .crbw-continue-watching-arrow {
+                    top: 80px;
                 }
 
                 .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
@@ -658,6 +668,7 @@
                 .crbw-continue-watching-arrow {
                     width: 36px;
                     height: 36px;
+                    top: 72px;
                 }
 
                 .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
@@ -669,10 +680,6 @@
             }
 
             @media (max-width: 29.99em) {
-                .crbw-continue-watching-carousel-content {
-                    gap: 8px;
-                }
-
                 .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
                     flex-basis: calc((100% - 16px) / 2);
                     width: calc((100% - 16px) / 2);
@@ -691,9 +698,10 @@
     function updateContinueWatchingArrowVisibility(track, leftButton, rightButton) {
         const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
         const scrollLeft = track.scrollLeft;
+        const threshold = 4;
 
-        leftButton.disabled = scrollLeft <= 4;
-        rightButton.disabled = scrollLeft >= maxScrollLeft - 4;
+        leftButton.hidden = scrollLeft <= threshold;
+        rightButton.hidden = maxScrollLeft <= threshold || scrollLeft >= maxScrollLeft - threshold;
     }
 
     function getContinueWatchingScrollStep(track) {

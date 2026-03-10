@@ -278,11 +278,6 @@
                     background: rgba(35, 37, 45, 0.96);
                 }
 
-                .crbw-continue-watching-arrow:disabled {
-                    opacity: 0.35;
-                    cursor: default;
-                }
-
                 .crbw-continue-watching-arrow[hidden] {
                     display: none !important;
                 }
@@ -293,11 +288,11 @@
                 }
 
                 .crbw-continue-watching-arrow-left {
-                    left: 10px;
+                    left: -56px;
                 }
 
                 .crbw-continue-watching-arrow-right {
-                    right: 10px;
+                    right: -56px;
                 }
 
                 @media (max-width: 49.99em) {
@@ -342,8 +337,8 @@
             const scrollLeft = track.scrollLeft;
             const threshold = 5;
 
-            leftButton.disabled = scrollLeft <= threshold;
-            rightButton.disabled = scrollLeft >= maxScrollLeft - threshold;
+            leftButton.hidden = scrollLeft <= threshold;
+            rightButton.hidden = maxScrollLeft <= threshold || scrollLeft >= maxScrollLeft - threshold;
         }
 
         function moveContinueWatchingItemsToTrack(source, track) {
