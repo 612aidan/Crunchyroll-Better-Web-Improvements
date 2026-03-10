@@ -881,8 +881,8 @@
             lastAppliedLayoutSignature = nextLayoutSignature;
 
             if (layoutRoot.container.matches(DYNAMIC_FEED_WRAPPER_SELECTOR)) {
-                layoutRoot.container.style.display = 'flex';
-                layoutRoot.container.style.flexDirection = 'column';
+                layoutRoot.container.style.removeProperty('display');
+                layoutRoot.container.style.removeProperty('flex-direction');
 
                 const visibleIds = new Set(orderedVisibleSections.map((section) => section.id));
                 logLayoutDebug('Updating Dynamic Feed Wrapper', {

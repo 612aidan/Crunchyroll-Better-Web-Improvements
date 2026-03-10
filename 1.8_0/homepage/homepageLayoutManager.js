@@ -534,8 +534,29 @@
         styleElement = document.createElement('style');
         styleElement.id = CONTINUE_WATCHING_STYLE_ID;
         styleElement.textContent = `
+            [data-crbw-continue-watching-enhanced="true"] {
+                width: auto;
+                inline-size: auto;
+                block-size: auto;
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            [data-crbw-continue-watching-enhanced="true"] > div,
+            [data-crbw-continue-watching-enhanced="true"] > div > div {
+                width: auto;
+                inline-size: auto;
+                block-size: auto;
+                max-width: 100%;
+                min-width: 0;
+            }
+
             .crbw-continue-watching-carousel-shell {
                 position: relative;
+                width: auto;
+                inline-size: auto;
+                max-width: 100%;
+                min-width: 0;
             }
 
             .crbw-continue-watching-carousel-content {
@@ -543,19 +564,29 @@
                 display: flex;
                 align-items: center;
                 gap: 12px;
+                width: auto;
+                inline-size: auto;
+                max-width: 100%;
+                min-width: 0;
             }
 
             .crbw-continue-watching-carousel-track {
                 display: flex !important;
                 flex-wrap: nowrap !important;
+                flex: 1 1 auto;
                 gap: 16px;
                 overflow-x: auto;
                 overflow-y: visible;
+                overscroll-behavior-x: contain;
                 scroll-behavior: smooth;
+                scroll-padding-inline: 0;
+                scroll-snap-type: x mandatory;
                 scrollbar-width: none;
                 -ms-overflow-style: none;
-                padding: 4px 2px 8px;
-                width: 100%;
+                padding: 4px 0 8px;
+                max-width: 100%;
+                min-width: 0;
+                width: auto;
             }
 
             .crbw-continue-watching-carousel-track::-webkit-scrollbar {
@@ -563,8 +594,21 @@
             }
 
             .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
-                flex: 0 0 calc((100% - 80px) / 6);
-                min-width: 0;
+                flex: 0 0 calc((100% - 64px) / 5);
+                width: calc((100% - 64px) / 5);
+                min-width: calc((100% - 64px) / 5);
+                max-width: calc((100% - 64px) / 5);
+                box-sizing: border-box;
+                scroll-snap-align: none;
+                scroll-snap-stop: always;
+            }
+
+            .crbw-continue-watching-carousel-track[data-crbw-continue-watching-page-size="5"] > ${CONTINUE_WATCHING_ITEM_SELECTOR}:nth-child(5n + 1),
+            .crbw-continue-watching-carousel-track[data-crbw-continue-watching-page-size="4"] > ${CONTINUE_WATCHING_ITEM_SELECTOR}:nth-child(4n + 1),
+            .crbw-continue-watching-carousel-track[data-crbw-continue-watching-page-size="3"] > ${CONTINUE_WATCHING_ITEM_SELECTOR}:nth-child(3n + 1),
+            .crbw-continue-watching-carousel-track[data-crbw-continue-watching-page-size="2"] > ${CONTINUE_WATCHING_ITEM_SELECTOR}:nth-child(2n + 1),
+            .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR}[data-crbw-continue-watching-last-page-start="true"] {
+                scroll-snap-align: start;
             }
 
             .crbw-continue-watching-arrow {
@@ -597,12 +641,6 @@
                 line-height: 1;
             }
 
-            @media (max-width: 107.49em) {
-                .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
-                    flex-basis: calc((100% - 64px) / 5);
-                }
-            }
-
             @media (max-width: 49.99em) {
                 .crbw-continue-watching-carousel-content {
                     gap: 10px;
@@ -610,6 +648,9 @@
 
                 .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
                     flex-basis: calc((100% - 48px) / 4);
+                    width: calc((100% - 48px) / 4);
+                    min-width: calc((100% - 48px) / 4);
+                    max-width: calc((100% - 48px) / 4);
                 }
             }
 
@@ -621,6 +662,9 @@
 
                 .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
                     flex-basis: calc((100% - 32px) / 3);
+                    width: calc((100% - 32px) / 3);
+                    min-width: calc((100% - 32px) / 3);
+                    max-width: calc((100% - 32px) / 3);
                 }
             }
 
@@ -631,6 +675,9 @@
 
                 .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
                     flex-basis: calc((100% - 16px) / 2);
+                    width: calc((100% - 16px) / 2);
+                    min-width: calc((100% - 16px) / 2);
+                    max-width: calc((100% - 16px) / 2);
                 }
             }
         `;
@@ -664,6 +711,168 @@
         return itemWidth * visibleItems;
     }
 
+    function getContinueWatchingPageSize() {
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+
+        if (viewportWidth <= 479) {
+            return 2;
+        }
+
+        if (viewportWidth <= 567) {
+            return 3;
+        }
+
+        if (viewportWidth <= 799) {
+            return 4;
+        }
+
+        return 5;
+    }
+
+    function getContinueWatchingItemWidth(track) {
+        const firstItem = track.querySelector(CONTINUE_WATCHING_ITEM_SELECTOR);
+        if (!(firstItem instanceof HTMLElement)) {
+            return 0;
+        }
+
+        const itemRect = firstItem.getBoundingClientRect();
+        const trackStyle = window.getComputedStyle(track);
+        const gap = parseFloat(trackStyle.columnGap || trackStyle.gap || '0');
+
+        return itemRect.width + gap;
+    }
+
+    function getContinueWatchingPageStartItems(track) {
+        const items = Array.from(track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
+            .filter((item) => item instanceof HTMLElement);
+        const pageSize = getContinueWatchingPageSize();
+        const targetIndexes = [];
+
+        if (!items.length || !pageSize) {
+            return [];
+        }
+
+        for (let index = 0; index < items.length; index += pageSize) {
+            targetIndexes.push(index);
+        }
+
+        targetIndexes.push(Math.max(0, items.length - pageSize));
+
+        const uniqueTargetIndexes = Array.from(new Set(targetIndexes))
+            .filter((index) => index >= 0 && index < items.length)
+            .sort((left, right) => left - right);
+
+        items.forEach((item) => {
+            item.removeAttribute('data-crbw-continue-watching-page-start');
+            item.removeAttribute('data-crbw-continue-watching-last-page-start');
+        });
+
+        const lastPageStartIndex = uniqueTargetIndexes[uniqueTargetIndexes.length - 1];
+        if (items[lastPageStartIndex] instanceof HTMLElement) {
+            items[lastPageStartIndex].setAttribute('data-crbw-continue-watching-last-page-start', 'true');
+        }
+
+        return uniqueTargetIndexes.map((index) => {
+            const item = items[index];
+            item.setAttribute('data-crbw-continue-watching-page-start', 'true');
+            return item;
+        });
+    }
+
+    function getContinueWatchingPageTargets(track) {
+        const pageStartItems = getContinueWatchingPageStartItems(track);
+        const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
+
+        if (!pageStartItems.length) {
+            return [0];
+        }
+
+        return pageStartItems.map((item) => Math.min(maxScrollLeft, Math.max(0, item.offsetLeft)));
+    }
+
+    function logContinueWatchingPagingState(label, track, extra = {}) {
+        if (!(track instanceof HTMLElement)) {
+            return;
+        }
+
+        const items = Array.from(track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
+            .filter((item) => item instanceof HTMLElement);
+        const sampledItems = items.slice(0, 8).map((item, index) => ({
+            index,
+            offsetLeft: item.offsetLeft,
+            clientWidth: item.clientWidth,
+            rectWidth: Math.round(item.getBoundingClientRect().width * 100) / 100,
+            pageStart: item.hasAttribute('data-crbw-continue-watching-page-start'),
+            lastPageStart: item.getAttribute('data-crbw-continue-watching-last-page-start') === 'true'
+        }));
+
+        const payload = {
+            scrollLeft: track.scrollLeft,
+            clientWidth: track.clientWidth,
+            scrollWidth: track.scrollWidth,
+            maxScrollLeft: Math.max(0, track.scrollWidth - track.clientWidth),
+            pageSize: getContinueWatchingPageSize(),
+            nearestPageIndex: getContinueWatchingNearestPageIndex(track),
+            pageTargets: getContinueWatchingPageTargets(track),
+            trackGap: window.getComputedStyle(track).gap,
+            trackPaddingLeft: window.getComputedStyle(track).paddingLeft,
+            trackPaddingRight: window.getComputedStyle(track).paddingRight,
+            sampledItems,
+            ...extra
+        };
+
+        logLayoutDebug(`Continue Watching Paging ${label}`, payload);
+        console.warn(`[CRBW][CW-Paging] ${label}`, payload);
+    }
+
+    function getContinueWatchingNearestPageIndex(track) {
+        const pageStartItems = getContinueWatchingPageStartItems(track);
+        const pageTargets = pageStartItems.length
+            ? pageStartItems.map((item) => item.offsetLeft)
+            : [0];
+        let nearestIndex = 0;
+        let nearestDistance = Number.POSITIVE_INFINITY;
+
+        pageTargets.forEach((target, index) => {
+            const distance = Math.abs(track.scrollLeft - target);
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestIndex = index;
+            }
+        });
+
+        return nearestIndex;
+    }
+
+    function getContinueWatchingPageStartItem(track, pageIndex = null) {
+        const pageStartItems = getContinueWatchingPageStartItems(track);
+        if (!pageStartItems.length) {
+            return null;
+        }
+
+        const boundedPageIndex = Math.min(
+            Math.max(0, pageStartItems.length - 1),
+            Math.max(0, pageIndex ?? getContinueWatchingNearestPageIndex(track))
+        );
+
+        return pageStartItems[boundedPageIndex] || null;
+    }
+
+    function scrollContinueWatchingToPage(track, pageIndex = null) {
+        const pageStartItem = getContinueWatchingPageStartItem(track, pageIndex);
+        if (!(pageStartItem instanceof HTMLElement)) {
+            return false;
+        }
+
+        pageStartItem.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'start'
+        });
+
+        return true;
+    }
+
     function bindContinueWatchingCarousel(sectionElement, track) {
         if (track.dataset.crbwContinueWatchingBound === 'true') {
             const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
@@ -684,6 +893,12 @@
             return;
         }
 
+        globalThis.__CRBW_DUMP_CONTINUE_WATCHING = () => {
+            logContinueWatchingPagingState('Manual Dump', track, {
+                sectionLabel: getSectionLabel(sectionElement)
+            });
+        };
+
         const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
         const rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
 
@@ -696,29 +911,99 @@
             return;
         }
 
+        let snapTimeoutId = 0;
+        let snapReleaseTimeoutId = 0;
+        let isSnapping = false;
+
         const handleScroll = () => {
             updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
+
+            if (snapTimeoutId) {
+                window.clearTimeout(snapTimeoutId);
+            }
+
+            if (isSnapping) {
+                return;
+            }
+
+            snapTimeoutId = window.setTimeout(() => {
+                const snapTarget = getContinueWatchingPageTargets(track)[getContinueWatchingNearestPageIndex(track)] || 0;
+                if (Math.abs(track.scrollLeft - snapTarget) <= 4) {
+                    track.scrollLeft = snapTarget;
+                    updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
+                    logContinueWatchingPagingState('Snap Not Needed', track, {
+                        snapTarget
+                    });
+                    return;
+                }
+
+                isSnapping = true;
+                logContinueWatchingPagingState('Snap Starting', track, {
+                    snapTarget
+                });
+                scrollContinueWatchingToPage(track);
+                snapReleaseTimeoutId = window.setTimeout(() => {
+                    isSnapping = false;
+                    updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
+                    logContinueWatchingPagingState('Snap Settled', track, {
+                        snapTarget,
+                        settledPageIndex: getContinueWatchingNearestPageIndex(track)
+                    });
+                }, 220);
+            }, 140);
         };
 
         const handleButtonClick = (direction) => {
-            const step = getContinueWatchingScrollStep(track) * direction;
-            track.scrollBy({ left: step, behavior: 'smooth' });
+            const currentPageIndex = getContinueWatchingNearestPageIndex(track);
+            const nextPageIndex = getContinueWatchingNearestPageIndex(track) + direction;
+
+            if (snapTimeoutId) {
+                window.clearTimeout(snapTimeoutId);
+            }
+
+            if (snapReleaseTimeoutId) {
+                window.clearTimeout(snapReleaseTimeoutId);
+            }
+
+            isSnapping = true;
+            logContinueWatchingPagingState('Arrow Click', track, {
+                direction,
+                currentPageIndex,
+                nextPageIndex
+            });
+            scrollContinueWatchingToPage(track, nextPageIndex);
+            snapReleaseTimeoutId = window.setTimeout(() => {
+                isSnapping = false;
+                updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
+                logContinueWatchingPagingState('Arrow Settled', track, {
+                    direction,
+                    settledPageIndex: getContinueWatchingNearestPageIndex(track)
+                });
+            }, 220);
         };
 
         track.dataset.crbwContinueWatchingBound = 'true';
+        track.dataset.crbwContinueWatchingPageSize = String(getContinueWatchingPageSize());
         handleScroll();
+        logContinueWatchingPagingState('Bound', track, {
+            sectionLabel: getSectionLabel(sectionElement)
+        });
         logLayoutDebug('Continue Watching Carousel Bound', {
             sectionLabel: getSectionLabel(sectionElement),
             itemCount: track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`).length,
             scrollWidth: track.scrollWidth,
             clientWidth: track.clientWidth,
             scrollStep: getContinueWatchingScrollStep(track),
+            pageTargets: getContinueWatchingPageTargets(track),
             leftDisabled: leftButton.disabled,
             rightDisabled: rightButton.disabled
         });
 
         track.addEventListener('scroll', handleScroll);
-        window.addEventListener('resize', handleScroll);
+        window.addEventListener('resize', () => {
+            track.dataset.crbwContinueWatchingPageSize = String(getContinueWatchingPageSize());
+            handleScroll();
+        });
         leftButton.addEventListener('click', () => handleButtonClick(-1));
         rightButton.addEventListener('click', () => handleButtonClick(1));
 
@@ -788,6 +1073,8 @@
         });
 
         ensureContinueWatchingStyles();
+        sectionElement.setAttribute('data-crbw-continue-watching-enhanced', 'true');
+        const trackParent = track.parentElement;
 
         let shell = sectionElement.querySelector('.crbw-continue-watching-carousel-shell');
         let content = sectionElement.querySelector('.crbw-continue-watching-carousel-content');
@@ -838,8 +1125,16 @@
             shell.appendChild(content);
         }
 
-        if (shell.parentElement !== sectionElement) {
-            sectionElement.appendChild(shell);
+        const preferredShellParent = trackParent instanceof HTMLElement && trackParent !== content
+            ? trackParent
+            : sectionElement;
+
+        if (shell.parentElement !== preferredShellParent) {
+            if (preferredShellParent === trackParent && trackParent instanceof HTMLElement) {
+                trackParent.insertBefore(shell, track);
+            } else {
+                sectionElement.appendChild(shell);
+            }
         }
 
         logLayoutDebug('Continue Watching Enhancement Applied DOM', {
@@ -848,6 +1143,7 @@
             contentConnected: content.isConnected,
             leftArrowConnected: leftButton.isConnected,
             rightArrowConnected: rightButton.isConnected,
+            shellParentClassName: shell.parentElement?.className || null,
             trackParentClassName: track.parentElement?.className || null,
             sectionChildCount: sectionElement.children.length
         });
@@ -990,11 +1286,13 @@
                 const configById = new Map(mergedSections.map((section) => [section.id, section]));
                 const unmatchedBucket = configById.get(HOMEPAGE_UNMATCHED_BUCKET_ID);
                 const removeAdsEnabled = items[REMOVE_CRUNCHYROLL_ADS_SETTING_KEY] === true;
-                const wrapperDisplay = window.getComputedStyle(wrapper).display;
-
-                if (layoutRoot?.usesDynamicFeedWrapper && wrapperDisplay !== 'flex') {
-                    wrapper.style.display = 'flex';
-                    wrapper.style.flexDirection = 'column';
+                if (layoutRoot?.usesDynamicFeedWrapper) {
+                    // Preserve Crunchyroll's native feed layout. Forcing flex here
+                    // changes intrinsic sizing for Continue Watching and scales the
+                    // whole homepage incorrectly.
+                    wrapper.style.removeProperty('display');
+                    wrapper.style.removeProperty('flex-direction');
+                    wrapper.style.removeProperty('align-items');
                 }
 
                 logLayoutDebug('Applying homepage layout', {
@@ -1022,6 +1320,12 @@
 
                     section.element.style.display = shouldShow && !shouldHideHomepageSection(section, removeAdsEnabled) ? '' : 'none';
                     section.element.style.order = String(order);
+                    section.element.style.width = 'auto';
+                    section.element.style.maxWidth = '100%';
+                    section.element.style.minWidth = '0';
+                    section.element.style.flexShrink = '1';
+                    section.element.style.flexBasis = 'auto';
+                    section.element.style.alignSelf = 'stretch';
                 });
 
                 const orderedVisibleSections = discoveredSections
