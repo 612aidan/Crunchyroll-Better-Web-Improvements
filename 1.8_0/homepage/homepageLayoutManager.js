@@ -696,12 +696,22 @@
     }
 
     function updateContinueWatchingArrowVisibility(track, leftButton, rightButton) {
-        const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
+        const pageStartItems = getContinueWatchingPageStartItems(track);
         const scrollLeft = track.scrollLeft;
         const threshold = 4;
 
-        leftButton.hidden = scrollLeft <= threshold;
-        rightButton.hidden = maxScrollLeft <= threshold || scrollLeft >= maxScrollLeft - threshold;
+        if (!pageStartItems.length) {
+            leftButton.hidden = true;
+            rightButton.hidden = true;
+            return;
+        }
+
+        const firstPageOffset = Math.max(0, pageStartItems[0].offsetLeft);
+        const lastPageOffset = Math.max(0, pageStartItems[pageStartItems.length - 1].offsetLeft);
+
+        leftButton.hidden = scrollLeft <= firstPageOffset + threshold;
+        rightButton.hidden = lastPageOffset <= firstPageOffset + threshold
+            || scrollLeft >= lastPageOffset - threshold;
     }
 
     function getContinueWatchingScrollStep(track) {

@@ -30,6 +30,11 @@
     let homepageInlineGutterWatcherInitialized = false;
     let homepageInlineGutterObserver = null;
     let lastHeroCarouselStateSignature = '';
+    let isContextInvalidated = false;
+    const homepageRuntimeState = {
+        observer: null,
+        scheduledRefresh: null
+    };
 
     const HOMEPAGE_SECTION_IDS = {
         NEXT_SEASON: 'next-season',
@@ -78,6 +83,62 @@
         kind: 'bucket',
         defaultOrder: 9999
     };
+
+    function isExtensionContextValid() {
+        if (isContextInvalidated) {
+            return false;
+        }
+
+        try {
+            return Boolean(chrome?.runtime?.id);
+        } catch (error) {
+            if (String(error?.message || error).includes('Extension context invalidated')) {
+                markContextInvalidated();
+                return false;
+            }
+
+            throw error;
+        }
+    }
+
+    function runWithValidContext(callback) {
+        if (!isExtensionContextValid()) {
+            return false;
+        }
+
+        try {
+            callback();
+            return true;
+        } catch (error) {
+            if (String(error?.message || error).includes('Extension context invalidated')) {
+                markContextInvalidated();
+                return false;
+            }
+
+            throw error;
+        }
+    }
+
+    function teardownHomepageRuntime() {
+        if (homepageRuntimeState.scheduledRefresh) {
+            window.clearTimeout(homepageRuntimeState.scheduledRefresh);
+            homepageRuntimeState.scheduledRefresh = null;
+        }
+
+        if (homepageRuntimeState.observer) {
+            homepageRuntimeState.observer.disconnect();
+            homepageRuntimeState.observer = null;
+        }
+    }
+
+    function markContextInvalidated() {
+        if (isContextInvalidated) {
+            return;
+        }
+
+        isContextInvalidated = true;
+        teardownHomepageRuntime();
+    }
 
     function slugify(value) {
         return String(value || '')
@@ -525,7 +586,6 @@
         ].join(', ');
         let lastDiscoveredSignature = '';
         let lastAppliedLayoutSignature = '';
-        let scheduledRefresh = null;
 
         function logLayoutDebug(label, payload) {
         console.log(`[CRBW][HomepageLayout] ${label}`, payload);
@@ -737,6 +797,11 @@
     }
 
         function persistDiscoveredSections(currentSections) {
+            if (!isExtensionContextValid()) {
+                teardownHomepageRuntime();
+                return;
+            }
+
             const discoveredSections = currentSections
             .filter((section) => section.kind === 'builtin')
             .map((section) => ({
@@ -759,9 +824,9 @@
             ids: discoveredSections.map((section) => section.id),
             labels: discoveredSections.map((section) => section.label)
         });
-        chrome.storage.local.set({
+        runWithValidContext(() => chrome.storage.local.set({
             [HOMEPAGE_DISCOVERED_SECTIONS_STORAGE_KEY]: discoveredSections
-        });
+        }));
     }
 
         function getDiscoveredSectionsFromCurrentSections(currentSections) {
@@ -775,13 +840,22 @@
     }
 
         function ensureInitialLayout(currentSections) {
+        if (!isExtensionContextValid()) {
+            teardownHomepageRuntime();
+            return;
+        }
+
         const currentDiscoveredSections = normalizeDiscoveredSections(
             getDiscoveredSectionsFromCurrentSections(currentSections)
         );
 
-        chrome.storage.local.get([
+        runWithValidContext(() => chrome.storage.local.get([
             HOMEPAGE_SECTIONS_STORAGE_KEY
         ], (items) => {
+            if (!isExtensionContextValid()) {
+                return;
+            }
+
             const existingLayout = items[HOMEPAGE_SECTIONS_STORAGE_KEY];
             logLayoutDebug('Ensuring Initial Layout', {
                 existingLayoutCount: Array.isArray(existingLayout) ? existingLayout.length : 0,
@@ -805,13 +879,18 @@
                 count: nextLayout.length,
                 ids: nextLayout.map((section) => section.id)
             });
-            chrome.storage.local.set({
+            runWithValidContext(() => chrome.storage.local.set({
                 [HOMEPAGE_SECTIONS_STORAGE_KEY]: nextLayout
-            });
-        });
+            }));
+        }));
     }
 
         function applyHomepageLayout() {
+        if (!isExtensionContextValid()) {
+            teardownHomepageRuntime();
+            return;
+        }
+
         const layoutRoot = findLayoutRoot();
         if (!layoutRoot?.container) {
             console.log('ℹ️ Homepage layout manager could not find a homepage container yet.');
@@ -827,10 +906,14 @@
         persistDiscoveredSections(currentSections);
         ensureInitialLayout(currentSections);
 
-        chrome.storage.local.get([
+        runWithValidContext(() => chrome.storage.local.get([
             HOMEPAGE_SECTIONS_STORAGE_KEY,
             REMOVE_CRUNCHYROLL_ADS_SETTING_KEY
         ], (items) => {
+            if (!isExtensionContextValid()) {
+                return;
+            }
+
             const discoveredSections = normalizeDiscoveredSections(
                 getDiscoveredSectionsFromCurrentSections(currentSections)
             );
@@ -941,16 +1024,25 @@
                 layoutRoot.container.appendChild(fragment);
             }
 
-        });
+        }));
     }
 
         function scheduleApply() {
-            if (scheduledRefresh) {
-                window.clearTimeout(scheduledRefresh);
+            if (!isExtensionContextValid()) {
+                teardownHomepageRuntime();
+                return;
             }
 
-            scheduledRefresh = window.setTimeout(() => {
-                scheduledRefresh = null;
+            if (homepageRuntimeState.scheduledRefresh) {
+                window.clearTimeout(homepageRuntimeState.scheduledRefresh);
+            }
+
+            homepageRuntimeState.scheduledRefresh = window.setTimeout(() => {
+                homepageRuntimeState.scheduledRefresh = null;
+                if (!isExtensionContextValid()) {
+                    teardownHomepageRuntime();
+                    return;
+                }
                 applyHomepageLayout();
             }, 120);
         }
@@ -961,7 +1053,17 @@
         };
 
     function observeHomepage() {
+        if (!isExtensionContextValid()) {
+            teardownHomepageRuntime();
+            return;
+        }
+
         const observer = new MutationObserver((mutations) => {
+            if (!isExtensionContextValid()) {
+                teardownHomepageRuntime();
+                return;
+            }
+
             const hasRelevantMutation = mutations.some((mutation) => {
                 if (!(mutation.target instanceof Node)) {
                     return false;
@@ -985,13 +1087,22 @@
             scheduleApply();
         });
 
+        homepageRuntimeState.observer = observer;
         observer.observe(document.body, { childList: true, subtree: true });
 
-        chrome.storage.local.get(HIDE_HERO_CAROUSEL_SETTING_KEY, (items) => {
-            applyHeroCarouselVisibilityFromShared(items[HIDE_HERO_CAROUSEL_SETTING_KEY] === true);
-        });
+        runWithValidContext(() => chrome.storage.local.get(HIDE_HERO_CAROUSEL_SETTING_KEY, (items) => {
+            if (!isExtensionContextValid()) {
+                return;
+            }
 
-        chrome.storage.onChanged.addListener((changes, areaName) => {
+            applyHeroCarouselVisibilityFromShared(items[HIDE_HERO_CAROUSEL_SETTING_KEY] === true);
+        }));
+
+        runWithValidContext(() => chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (!isExtensionContextValid()) {
+                return;
+            }
+
             if (areaName !== 'local') {
                 return;
             }
@@ -1007,7 +1118,7 @@
             if (changes[HIDE_HERO_CAROUSEL_SETTING_KEY]) {
                 applyHeroCarouselVisibilityFromShared(changes[HIDE_HERO_CAROUSEL_SETTING_KEY].newValue === true);
             }
-        });
+        }));
 
         scheduleApply();
     }

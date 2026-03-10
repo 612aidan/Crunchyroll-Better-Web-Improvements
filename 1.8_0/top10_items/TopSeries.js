@@ -333,12 +333,22 @@
         }
 
         function updateContinueWatchingArrowVisibility(track, leftButton, rightButton) {
-            const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
+            const pageStartItems = getContinueWatchingPageStartItems(track);
             const scrollLeft = track.scrollLeft;
             const threshold = 5;
 
-            leftButton.hidden = scrollLeft <= threshold;
-            rightButton.hidden = maxScrollLeft <= threshold || scrollLeft >= maxScrollLeft - threshold;
+            if (!pageStartItems.length) {
+                leftButton.hidden = true;
+                rightButton.hidden = true;
+                return;
+            }
+
+            const firstPageOffset = Math.max(0, pageStartItems[0].offsetLeft);
+            const lastPageOffset = Math.max(0, pageStartItems[pageStartItems.length - 1].offsetLeft);
+
+            leftButton.hidden = scrollLeft <= firstPageOffset + threshold;
+            rightButton.hidden = lastPageOffset <= firstPageOffset + threshold
+                || scrollLeft >= lastPageOffset - threshold;
         }
 
         function moveContinueWatchingItemsToTrack(source, track) {
@@ -381,6 +391,77 @@
             return itemWidth * visibleItems;
         }
 
+        function getContinueWatchingVisibleItemCount() {
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+
+            if (viewportWidth <= 567) {
+                return 2;
+            }
+
+            if (viewportWidth <= 799) {
+                return 3;
+            }
+
+            return 5;
+        }
+
+        function getContinueWatchingPageStartItems(track) {
+            const items = Array.from(track.querySelectorAll(`:scope > ${continueWatchingItemSelector}`))
+                .filter((item) => item instanceof HTMLElement);
+            const visibleItems = getContinueWatchingVisibleItemCount();
+            const pageStartIndexes = [];
+
+            if (!items.length || visibleItems <= 0) {
+                return [];
+            }
+
+            for (let index = 0; index < items.length; index += visibleItems) {
+                pageStartIndexes.push(index);
+            }
+
+            pageStartIndexes.push(Math.max(0, items.length - visibleItems));
+
+            return Array.from(new Set(pageStartIndexes))
+                .filter((index) => index >= 0 && index < items.length)
+                .sort((left, right) => left - right)
+                .map((index) => items[index]);
+        }
+
+        function getContinueWatchingNearestPageIndex(track) {
+            const pageStartItems = getContinueWatchingPageStartItems(track);
+            let nearestPageIndex = 0;
+            let nearestDistance = Number.POSITIVE_INFINITY;
+
+            pageStartItems.forEach((item, index) => {
+                const distance = Math.abs(track.scrollLeft - item.offsetLeft);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestPageIndex = index;
+                }
+            });
+
+            return nearestPageIndex;
+        }
+
+        function scrollContinueWatchingToPage(track, pageIndex) {
+            const pageStartItems = getContinueWatchingPageStartItems(track);
+            if (!pageStartItems.length) {
+                return;
+            }
+
+            const boundedPageIndex = Math.max(0, Math.min(pageStartItems.length - 1, pageIndex));
+            const targetItem = pageStartItems[boundedPageIndex];
+            if (!(targetItem instanceof HTMLElement)) {
+                return;
+            }
+
+            targetItem.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'start'
+            });
+        }
+
         function bindContinueWatchingCarousel(sectionElement, track, source) {
             const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
             const rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
@@ -403,8 +484,8 @@
             };
 
             const handleButtonClick = (direction) => {
-                const step = getContinueWatchingScrollStep(track) * direction;
-                track.scrollBy({ left: step, behavior: 'smooth' });
+                const nextPageIndex = getContinueWatchingNearestPageIndex(track) + direction;
+                scrollContinueWatchingToPage(track, nextPageIndex);
             };
 
             track.dataset.crbwContinueWatchingBound = 'true';
@@ -953,7 +1034,6 @@
                 if (payloadSignature !== lastHeroCarouselApplySignature) {
                     lastHeroCarouselApplySignature = payloadSignature;
                     logLayoutDebug('Hero Carousel Apply', payload);
-                    console.warn('[CRBW][HomepageLayout] Hero Carousel Apply', payload);
                 }
                 return;
             }
