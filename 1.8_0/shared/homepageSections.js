@@ -627,14 +627,7 @@
 
         const directDataId = element.getAttribute('data-id');
         if (directDataId) {
-            if (element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)) {
-                return true;
-            }
-
-            return Boolean(
-                element.querySelector(SECTION_HEADING_SELECTOR)
-                && element.querySelector(BUILTIN_SECTION_CONTENT_SELECTOR)
-            );
+            return isVisibleElement(element);
         }
 
         return false;
@@ -652,19 +645,37 @@
         return isBuiltinHomepageSection(element);
     }
 
+        function getBuiltinSectionSourceElement(element) {
+        if (!(element instanceof HTMLElement)) {
+            return null;
+        }
+
+        if (isBuiltinHomepageSection(element)) {
+            return element;
+        }
+
+        const nestedSection = element.querySelector(BUILTIN_SECTION_WRAPPER_SELECTOR);
+        return nestedSection instanceof HTMLElement && isBuiltinHomepageSection(nestedSection)
+            ? nestedSection
+            : null;
+    }
+
         function getSectionLabel(element) {
-        const explicitId = element.getAttribute('data-crbw-homepage-section');
+        const sourceElement = element.hasAttribute('data-crbw-homepage-section')
+            ? element
+            : getBuiltinSectionSourceElement(element) || element;
+        const explicitId = sourceElement.getAttribute('data-crbw-homepage-section');
         const customDefinition = explicitId ? findCustomDefinition(explicitId) : null;
         if (customDefinition) {
             return customDefinition.label;
         }
 
-        const heading = element.querySelector(SECTION_HEADING_SELECTOR);
+        const heading = sourceElement.querySelector(SECTION_HEADING_SELECTOR);
         if (heading?.textContent) {
             return heading.textContent.trim();
         }
 
-        if (element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)) {
+        if (sourceElement.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)) {
             return CONTINUE_WATCHING_LABEL;
         }
 
@@ -672,7 +683,13 @@
     }
 
         function getBuiltinSectionId(element, index, existingIds = new Set()) {
-        const label = getSectionLabel(element);
+        const sourceElement = getBuiltinSectionSourceElement(element) || element;
+        const dataId = sourceElement.getAttribute('data-id');
+        if (dataId) {
+            return `builtin:data-id:${dataId}`;
+        }
+
+        const label = getSectionLabel(sourceElement);
         const slug = slugify(label);
 
         if (slug) {
@@ -687,7 +704,7 @@
             return candidateId;
         }
 
-        const dataT = element.getAttribute('data-t');
+        const dataT = sourceElement.getAttribute('data-t');
         if (dataT) {
             return `builtin:data-t:${dataT}`;
         }
@@ -753,7 +770,13 @@
 
         function collectCurrentSections(mainContainer) {
         const topLevelSections = Array.from(mainContainer.children)
-            .filter((candidate) => candidate instanceof HTMLElement && isLikelyHomepageSection(candidate));
+            .filter((candidate) =>
+                candidate instanceof HTMLElement
+                && (
+                    candidate.hasAttribute('data-crbw-homepage-section')
+                    || Boolean(getBuiltinSectionSourceElement(candidate))
+                )
+            );
 
         const seenIds = new Set();
         const collectedSections = topLevelSections

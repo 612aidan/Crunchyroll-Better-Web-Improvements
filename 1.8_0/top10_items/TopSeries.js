@@ -55,6 +55,8 @@
     }
 
     function ensureHomepageLayoutManager() {
+        return Boolean(getLiveHomepageSectionsShared().requestHomepageLayoutApply);
+
         console.log('[CRBW][HomepageLayout] Bootstrap From TopSeries', {
             initialized: Boolean(globalThis.__CRBW_DYNAMIC_FEED_LAYOUT_MANAGER_INITIALIZED__)
         });
@@ -2235,6 +2237,7 @@ function ensureSectionsMounted() {
 
     if (mountedCount > 0) {
         getLiveHomepageSectionsShared().scheduleHomepageSectionInlineGutterSync?.();
+        getLiveHomepageSectionsShared().requestHomepageLayoutApply?.();
         console.log(`✅ Prepared ${mountedCount} series section(s) for the homepage layout manager.`);
     }
 

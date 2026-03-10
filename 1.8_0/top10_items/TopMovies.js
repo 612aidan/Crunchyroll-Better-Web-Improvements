@@ -896,6 +896,7 @@ function ensureSectionsMounted() {
 
     if (mountedCount > 0) {
         getLiveHomepageSectionsShared().scheduleHomepageSectionInlineGutterSync?.();
+        getLiveHomepageSectionsShared().requestHomepageLayoutApply?.();
         console.log(`✅ Prepared ${mountedCount} movie section(s) for the homepage layout manager.`);
     }
 
