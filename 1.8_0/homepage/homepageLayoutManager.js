@@ -3,7 +3,12 @@
         legacyInitialized: Boolean(globalThis.__CRBW_HOMEPAGE_LAYOUT_MANAGER_INITIALIZED__),
         standaloneInitialized: Boolean(globalThis.__CRBW_DYNAMIC_FEED_LAYOUT_MANAGER_INITIALIZED__)
     });
-    console.warn('[CRBW][HomepageLayout][CW] Homepage Layout Manager Script Evaluated');
+    console.log('[CRBW][HomepageLayout][CW] Homepage Layout Manager Script Evaluated');
+
+    if (globalThis.__CRBW_HOMEPAGE_LAYOUT_MANAGER_INITIALIZED__) {
+        console.log('[CRBW][HomepageLayout] Shared Homepage Layout Manager Already Initialized; Skipping Standalone Manager');
+        return;
+    }
 
     if (globalThis.__CRBW_DYNAMIC_FEED_LAYOUT_MANAGER_INITIALIZED__) {
         return;
@@ -68,9 +73,45 @@
     let lastDiscoveredSignature = '';
     let scheduledRefresh = null;
     let refreshIntervalId = null;
+    let isContextInvalidated = false;
 
     function logLayoutDebug(label, payload) {
         console.log(`[CRBW][HomepageLayout] ${label}`, payload);
+    }
+
+    function isExtensionContextValid() {
+        if (isContextInvalidated) {
+            return false;
+        }
+
+        try {
+            return Boolean(chrome?.runtime?.id);
+        } catch (error) {
+            if (String(error?.message || error).includes('Extension context invalidated')) {
+                isContextInvalidated = true;
+                return false;
+            }
+
+            throw error;
+        }
+    }
+
+    function runWithValidContext(callback) {
+        if (!isExtensionContextValid()) {
+            return false;
+        }
+
+        try {
+            callback();
+            return true;
+        } catch (error) {
+            if (String(error?.message || error).includes('Extension context invalidated')) {
+                isContextInvalidated = true;
+                return false;
+            }
+
+            throw error;
+        }
     }
 
     function slugify(value) {
@@ -478,14 +519,6 @@
             wrapperChildCount: wrapperChildren.length,
             wrapperLabels
         });
-        console.warn('[CRBW][HomepageLayout][CW] Continue Watching Probe', {
-            hasWrapper: wrapper instanceof HTMLElement,
-            hasContinueWatchingHeading: continueWatchingHeading instanceof HTMLElement,
-            continueWatchingHeadingText: continueWatchingHeading?.textContent?.trim() || null,
-            hasGlobalHistoryTrack: globalTrack instanceof HTMLElement,
-            wrapperChildCount: wrapperChildren.length,
-            wrapperLabels
-        });
     }
 
     function ensureContinueWatchingStyles() {
@@ -869,9 +902,13 @@
     }
 
     function ensureInitialLayout(discoveredSections) {
-        chrome.storage.local.get(
+        runWithValidContext(() => chrome.storage.local.get(
             [HOMEPAGE_SECTIONS_STORAGE_KEY, HOMEPAGE_DISCOVERED_SECTIONS_STORAGE_KEY],
             (items) => {
+                if (!isExtensionContextValid()) {
+                    return;
+                }
+
                 const storedDiscovered = normalizeDiscoveredSections(items[HOMEPAGE_DISCOVERED_SECTIONS_STORAGE_KEY]);
                 const normalizedDiscovered = normalizeDiscoveredSections(discoveredSections);
                 const currentSectionIds = normalizedDiscovered.map((section) => section.id);
@@ -895,15 +932,15 @@
                 }
 
                 if (Object.keys(nextItems).length > 0) {
-                    chrome.storage.local.set(nextItems);
+                    runWithValidContext(() => chrome.storage.local.set(nextItems));
                     logLayoutDebug('Persisted homepage layout state', nextItems);
                 }
             }
-        );
+        ));
     }
 
     function applyHomepageLayout() {
-        chrome.storage.local.get(
+        runWithValidContext(() => chrome.storage.local.get(
             [
                 HOMEPAGE_SECTIONS_STORAGE_KEY,
                 HOMEPAGE_DISCOVERED_SECTIONS_STORAGE_KEY,
@@ -911,6 +948,10 @@
                 HIDE_HERO_CAROUSEL_SETTING_KEY
             ],
             (items) => {
+                if (!isExtensionContextValid()) {
+                    return;
+                }
+
                 const layoutRoot = findLayoutRoot();
                 const wrapper = layoutRoot?.container;
                 const hideHeroCarouselEnabled = items[HIDE_HERO_CAROUSEL_SETTING_KEY] === true;
@@ -1037,10 +1078,14 @@
                     kind: section.kind
                 })));
             }
-        );
+        ));
     }
 
     function scheduleApply() {
+        if (!isExtensionContextValid()) {
+            return;
+        }
+
         if (scheduledRefresh) {
             window.clearTimeout(scheduledRefresh);
         }
@@ -1052,13 +1097,21 @@
     }
 
     function observeHomepage() {
+        if (!isExtensionContextValid()) {
+            return;
+        }
+
         const observer = new MutationObserver(() => {
             scheduleApply();
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
 
-        chrome.storage.onChanged.addListener((changes, areaName) => {
+        runWithValidContext(() => chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (!isExtensionContextValid()) {
+                return;
+            }
+
             if (areaName !== 'local') {
                 return;
             }
@@ -1071,10 +1124,18 @@
             ) {
                 scheduleApply();
             }
-        });
+        }));
 
         if (!refreshIntervalId) {
             refreshIntervalId = window.setInterval(() => {
+                if (!isExtensionContextValid()) {
+                    if (refreshIntervalId) {
+                        window.clearInterval(refreshIntervalId);
+                        refreshIntervalId = null;
+                    }
+                    return;
+                }
+
                 scheduleApply();
             }, 1000);
         }

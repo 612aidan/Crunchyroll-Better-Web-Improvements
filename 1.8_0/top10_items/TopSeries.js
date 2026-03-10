@@ -195,8 +195,12 @@
                     box-sizing: border-box;
                 }
 
-                .crbw-continue-watching-carousel-viewport {
-                    overflow: hidden;
+                .crbw-continue-watching-carousel-track {
+                    display: flex !important;
+                    flex-wrap: nowrap !important;
+                    gap: 16px;
+                    overflow-x: auto;
+                    overflow-y: visible;
                     scroll-behavior: smooth;
                     scrollbar-width: none;
                     -ms-overflow-style: none;
@@ -205,16 +209,8 @@
                     box-sizing: border-box;
                 }
 
-                .crbw-continue-watching-carousel-viewport::-webkit-scrollbar {
+                .crbw-continue-watching-carousel-track::-webkit-scrollbar {
                     display: none;
-                }
-
-                .crbw-continue-watching-carousel-track {
-                    display: flex !important;
-                    flex-wrap: nowrap !important;
-                    gap: 16px;
-                    width: max-content;
-                    min-width: max-content;
                 }
 
                 .crbw-continue-watching-carousel-track > ${continueWatchingItemSelector} {
@@ -329,8 +325,8 @@
             return 5;
         }
 
-        function syncContinueWatchingCardWidths(viewport, cardsTrack) {
-            if (!(viewport instanceof HTMLElement) || !(cardsTrack instanceof HTMLElement)) {
+        function syncContinueWatchingCardWidths(cardsTrack) {
+            if (!(cardsTrack instanceof HTMLElement)) {
                 return;
             }
 
@@ -342,58 +338,62 @@
             }
 
             const gap = 16;
-            const visibleItems = getContinueWatchingVisibleItemCount(viewport.clientWidth);
-            const availableWidth = Math.max(0, viewport.clientWidth - (gap * (visibleItems - 1)));
-            const itemWidth = Math.max(150, Math.floor(availableWidth / visibleItems));
+            const trackWidth = cardsTrack.clientWidth;
+            if (trackWidth <= 0) {
+                return;
+            }
 
-            viewport.style.setProperty('--crbw-cw-item-width', `${itemWidth}px`);
+            const visibleItems = getContinueWatchingVisibleItemCount(trackWidth);
+            const availableWidth = Math.max(0, trackWidth - (gap * (visibleItems - 1)));
+            const itemWidth = Math.min(240, Math.max(150, Math.floor(availableWidth / visibleItems)));
+
+            cardsTrack.style.setProperty('--crbw-cw-item-width', `${itemWidth}px`);
         }
 
-        function getContinueWatchingScrollStep(viewport, cardsTrack) {
+        function getContinueWatchingScrollStep(cardsTrack) {
             const firstItem = cardsTrack?.querySelector(continueWatchingItemSelector);
             if (!(firstItem instanceof HTMLElement)) {
-                return viewport.clientWidth;
+                return cardsTrack?.clientWidth || 0;
             }
 
             const itemRect = firstItem.getBoundingClientRect();
             const itemWidth = itemRect.width + 16;
-            const visibleItems = getContinueWatchingVisibleItemCount(viewport.clientWidth);
+            const visibleItems = getContinueWatchingVisibleItemCount(cardsTrack.clientWidth);
 
             return itemWidth * visibleItems;
         }
 
-        function bindContinueWatchingCarousel(sectionElement, viewport) {
+        function bindContinueWatchingCarousel(sectionElement, cardsTrack) {
             const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
             const rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
-            const cardsTrack = sectionElement.querySelector('.crbw-continue-watching-carousel-track');
 
             if (!(leftButton instanceof HTMLButtonElement) || !(rightButton instanceof HTMLButtonElement)) {
                 return;
             }
 
-            if (!(viewport instanceof HTMLElement) || !(cardsTrack instanceof HTMLElement)) {
+            if (!(cardsTrack instanceof HTMLElement)) {
                 return;
             }
 
-            syncContinueWatchingCardWidths(viewport, cardsTrack);
+            syncContinueWatchingCardWidths(cardsTrack);
 
-            if (viewport.dataset.crbwContinueWatchingBound === 'true') {
-                updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
+            if (cardsTrack.dataset.crbwContinueWatchingBound === 'true') {
+                updateContinueWatchingArrowVisibility(cardsTrack, leftButton, rightButton);
                 return;
             }
 
             const handleScroll = () => {
-                updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
+                updateContinueWatchingArrowVisibility(cardsTrack, leftButton, rightButton);
             };
 
             const handleResize = () => {
-                syncContinueWatchingCardWidths(viewport, cardsTrack);
-                updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
+                syncContinueWatchingCardWidths(cardsTrack);
+                updateContinueWatchingArrowVisibility(cardsTrack, leftButton, rightButton);
             };
 
             const handleButtonClick = (direction) => {
-                const step = getContinueWatchingScrollStep(viewport, cardsTrack) * direction;
-                viewport.scrollBy({ left: step, behavior: 'smooth' });
+                const step = getContinueWatchingScrollStep(cardsTrack) * direction;
+                cardsTrack.scrollBy({ left: step, behavior: 'smooth' });
             };
 
             const handleWheel = (event) => {
@@ -409,29 +409,29 @@
                     return;
                 }
 
-                const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+                const maxScrollLeft = Math.max(0, cardsTrack.scrollWidth - cardsTrack.clientWidth);
                 if (maxScrollLeft <= 0) {
                     return;
                 }
 
-                const nextScrollLeft = viewport.scrollLeft + dominantDelta;
-                const isTryingToScrollPastStart = dominantDelta < 0 && viewport.scrollLeft <= 0;
-                const isTryingToScrollPastEnd = dominantDelta > 0 && viewport.scrollLeft >= maxScrollLeft;
+                const nextScrollLeft = cardsTrack.scrollLeft + dominantDelta;
+                const isTryingToScrollPastStart = dominantDelta < 0 && cardsTrack.scrollLeft <= 0;
+                const isTryingToScrollPastEnd = dominantDelta > 0 && cardsTrack.scrollLeft >= maxScrollLeft;
 
                 if (isTryingToScrollPastStart || isTryingToScrollPastEnd) {
                     return;
                 }
 
                 event.preventDefault();
-                viewport.scrollLeft = Math.max(0, Math.min(maxScrollLeft, nextScrollLeft));
-                updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
+                cardsTrack.scrollLeft = Math.max(0, Math.min(maxScrollLeft, nextScrollLeft));
+                updateContinueWatchingArrowVisibility(cardsTrack, leftButton, rightButton);
             };
 
-            viewport.dataset.crbwContinueWatchingBound = 'true';
+            cardsTrack.dataset.crbwContinueWatchingBound = 'true';
             handleScroll();
 
-            viewport.addEventListener('scroll', handleScroll);
-            viewport.addEventListener('wheel', handleWheel, { passive: false });
+            cardsTrack.addEventListener('scroll', handleScroll);
+            cardsTrack.addEventListener('wheel', handleWheel, { passive: false });
             window.addEventListener('resize', handleResize);
             leftButton.addEventListener('click', () => handleButtonClick(-1));
             rightButton.addEventListener('click', () => handleButtonClick(1));
@@ -441,7 +441,6 @@
                     handleResize();
                 });
 
-                resizeObserver.observe(viewport);
                 resizeObserver.observe(cardsTrack);
                 Array.from(cardsTrack.querySelectorAll('img')).forEach((image) => resizeObserver.observe(image));
             }
@@ -467,16 +466,14 @@
                 return;
             }
 
-            let viewport = sectionElement.querySelector('.crbw-continue-watching-carousel-viewport');
             let track = sectionElement.querySelector('.crbw-continue-watching-carousel-track');
             const source = sectionElement.querySelector(continueWatchingSourceSelector);
 
             if (
                 sectionElement.dataset.crbwContinueWatchingEnhanced === 'true'
-                && viewport instanceof HTMLElement
                 && track instanceof HTMLElement
             ) {
-                bindContinueWatchingCarousel(sectionElement, viewport);
+                bindContinueWatchingCarousel(sectionElement, track);
                 return;
             }
 
@@ -511,14 +508,8 @@
                 content.className = 'crbw-continue-watching-carousel-content';
             }
 
-            if (!(viewport instanceof HTMLElement)) {
-                viewport = document.createElement('div');
-                viewport.className = 'crbw-continue-watching-carousel-viewport';
-            }
-
             if (!(track instanceof HTMLElement)) {
-                track = document.createElement('div');
-                track.className = 'crbw-continue-watching-carousel-track';
+                track = source;
             }
 
             if (!(leftButton instanceof HTMLButtonElement)) {
@@ -537,25 +528,14 @@
                 rightButton.innerHTML = '<span>&#10095;</span>';
             }
 
-            if (source instanceof HTMLElement && source !== track) {
-                items.forEach((item) => {
-                    if (item.parentElement !== track) {
-                        track.appendChild(item);
-                    }
-                });
-                source.style.display = 'none';
-            }
+            track.classList.add('crbw-continue-watching-carousel-track');
 
             if (!content.contains(leftButton)) {
                 content.appendChild(leftButton);
             }
 
-            if (!viewport.contains(track)) {
-                viewport.appendChild(track);
-            }
-
-            if (viewport.parentElement !== content) {
-                content.appendChild(viewport);
+            if (track.parentElement !== content) {
+                content.appendChild(track);
             }
 
             if (!content.contains(rightButton)) {
@@ -571,7 +551,7 @@
             }
 
             sectionElement.dataset.crbwContinueWatchingEnhanced = 'true';
-            bindContinueWatchingCarousel(sectionElement, viewport);
+            bindContinueWatchingCarousel(sectionElement, track);
         }
 
         function shouldHideHomepageSection(section, removeAdsEnabled) {

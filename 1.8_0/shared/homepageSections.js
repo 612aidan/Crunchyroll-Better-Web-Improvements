@@ -29,6 +29,7 @@
     let homepageInlineGutterSyncFrame = 0;
     let homepageInlineGutterWatcherInitialized = false;
     let homepageInlineGutterObserver = null;
+    let lastHeroCarouselStateSignature = '';
 
     const HOMEPAGE_SECTION_IDS = {
         NEXT_SEASON: 'next-season',
@@ -310,7 +311,7 @@
             document.documentElement.dataset.crbwHeroCarouselSharedCount = heroCarousel ? '1' : '0';
         }
 
-        console.warn('[CRBW][HeroCarousel][Shared] Apply', {
+        const heroCarouselState = {
             enabled: hideHeroCarouselEnabled,
             found: Boolean(heroCarousel),
             parentId: heroCarousel?.parentElement?.id || '',
@@ -319,7 +320,13 @@
             className: heroCarousel?.className || '',
             role: heroCarousel?.getAttribute?.('role') || '',
             ariaLabel: heroCarousel?.getAttribute?.('aria-label') || ''
-        });
+        };
+        const heroCarouselSignature = JSON.stringify(heroCarouselState);
+
+        if (heroCarouselSignature !== lastHeroCarouselStateSignature) {
+            lastHeroCarouselStateSignature = heroCarouselSignature;
+            console.log('[CRBW][HeroCarousel][Shared] Apply', heroCarouselState);
+        }
     }
 
     function getDefaultHomepageSections() {
@@ -517,8 +524,8 @@
             CONTINUE_WATCHING_TRACK_SELECTOR
         ].join(', ');
         let lastDiscoveredSignature = '';
+        let lastAppliedLayoutSignature = '';
         let scheduledRefresh = null;
-        let refreshIntervalId = null;
 
         function logLayoutDebug(label, payload) {
         console.log(`[CRBW][HomepageLayout] ${label}`, payload);
@@ -730,7 +737,7 @@
     }
 
         function persistDiscoveredSections(currentSections) {
-        const discoveredSections = currentSections
+            const discoveredSections = currentSections
             .filter((section) => section.kind === 'builtin')
             .map((section) => ({
                 id: section.id,
@@ -860,6 +867,19 @@
                 }
             });
 
+            const nextLayoutSignature = JSON.stringify({
+                visibleIds: orderedVisibleSections.map((section) => section.id),
+                hiddenIds: currentSections
+                    .filter((section) => !orderedVisibleSections.some((visibleSection) => visibleSection.id === section.id))
+                    .map((section) => section.id)
+            });
+
+            if (nextLayoutSignature === lastAppliedLayoutSignature) {
+                return;
+            }
+
+            lastAppliedLayoutSignature = nextLayoutSignature;
+
             if (layoutRoot.container.matches(DYNAMIC_FEED_WRAPPER_SELECTOR)) {
                 layoutRoot.container.style.display = 'flex';
                 layoutRoot.container.style.flexDirection = 'column';
@@ -893,7 +913,6 @@
                     }
                 });
 
-                console.log(`✅ Homepage layout manager updated ${orderedVisibleSections.length} section(s) in the dynamic feed wrapper.`);
                 return;
             }
 
@@ -922,27 +941,48 @@
                 layoutRoot.container.appendChild(fragment);
             }
 
-            console.log(`✅ Homepage layout manager placed ${orderedVisibleSections.length} section(s) in the homepage container.`);
         });
     }
 
         function scheduleApply() {
-        if (scheduledRefresh) {
-            window.clearTimeout(scheduledRefresh);
+            if (scheduledRefresh) {
+                window.clearTimeout(scheduledRefresh);
+            }
+
+            scheduledRefresh = window.setTimeout(() => {
+                scheduledRefresh = null;
+                applyHomepageLayout();
+            }, 120);
         }
 
-        scheduledRefresh = window.setTimeout(() => {
-            scheduledRefresh = null;
-            applyHomepageLayout();
-        }, 120);
-    }
+        globalScope.CRBWHomepageSections = {
+            ...globalScope.CRBWHomepageSections,
+            requestHomepageLayoutApply: scheduleApply
+        };
 
     function observeHomepage() {
-        const observer = new MutationObserver(() => {
-            scheduleApply();
-            chrome.storage.local.get(HIDE_HERO_CAROUSEL_SETTING_KEY, (items) => {
-                applyHeroCarouselVisibilityFromShared(items[HIDE_HERO_CAROUSEL_SETTING_KEY] === true);
+        const observer = new MutationObserver((mutations) => {
+            const hasRelevantMutation = mutations.some((mutation) => {
+                if (!(mutation.target instanceof Node)) {
+                    return false;
+                }
+
+                const targetElement = mutation.target instanceof HTMLElement
+                    ? mutation.target
+                    : mutation.target.parentElement;
+                if (targetElement?.closest(`#${HOMEPAGE_STAGING_CONTAINER_ID}`)) {
+                    return false;
+                }
+
+                return Array.from(mutation.addedNodes).some((node) => node instanceof HTMLElement)
+                    || Array.from(mutation.removedNodes).some((node) => node instanceof HTMLElement);
             });
+
+            if (!hasRelevantMutation) {
+                return;
+            }
+
+            scheduleApply();
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
@@ -968,12 +1008,6 @@
                 applyHeroCarouselVisibilityFromShared(changes[HIDE_HERO_CAROUSEL_SETTING_KEY].newValue === true);
             }
         });
-
-        if (!refreshIntervalId) {
-            refreshIntervalId = window.setInterval(() => {
-                scheduleApply();
-            }, 1000);
-        }
 
         scheduleApply();
     }

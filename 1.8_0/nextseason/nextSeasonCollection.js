@@ -692,6 +692,7 @@ async function insertCustomCollection() {
             removeExistingCollection();
             getStagingContainer().appendChild(customCollection);
             homepageSectionsShared.scheduleHomepageSectionInlineGutterSync?.();
+            homepageSectionsShared.requestHomepageLayoutApply?.();
             hasLoggedCollectionFailure = false;
             collectionRetryBlockedUntil = 0;
             console.log('✅ Next Season section prepared for the homepage layout manager.');
