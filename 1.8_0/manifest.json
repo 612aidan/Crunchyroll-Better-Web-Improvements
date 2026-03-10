@@ -23,7 +23,9 @@
       "run_at": "document_idle"
    }, {
       "js": [ "newepisode/nuevoepisodio.js" ],
-      "matches": [ "https://www.crunchyroll.com/*" ],
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "matches": [ "https://www.crunchyroll.com/*", "https://crunchyroll.com/*", "https://beta.crunchyroll.com/*", "https://static.crunchyroll.com/*" ],
       "run_at": "document_idle"
    }, {
       "css": [ "anime_seasons/seasons.css" ],
@@ -80,6 +82,11 @@
       "matches": [ "https://www.crunchyroll.com/*/simulcastcalendar*", "https://www.crunchyroll.com/simulcastcalendar*" ],
       "run_at": "document_idle"
    }, {
+      "all_frames": true,
+      "js": [ "player/PlayerEnterSkip.js" ],
+      "matches": [ "https://static.crunchyroll.com/vilos-v2/web/vilos/player.html*" ],
+      "run_at": "document_start"
+   }, {
       "js": [ "songs/OPsEDs.js", "songs/MusicCarrusel.js", "songs/Etiqueta_Songs.js" ],
       "matches": [ "https://www.crunchyroll.com/*" ],
       "run_at": "document_idle"
@@ -107,7 +114,7 @@
    }, {
       "css": [ "episodes/EstilosEpsiodios.css" ],
       "js": [ "episodes/LogosPersonalizados.js", "episodes/MusicCaps.js" ],
-      "matches": [ "https://www.crunchyroll.com/*" ],
+      "matches": [ "https://www.crunchyroll.com/*", "https://crunchyroll.com/*", "https://beta.crunchyroll.com/*" ],
       "run_at": "document_start"
    }, {
       "js": [ "spoilers/OcultarSpoilers.js" ],
@@ -130,7 +137,7 @@
    } ],
    "default_locale": "en",
    "description": "__MSG_extensionDescription__",
-   "host_permissions": [ "https://ipinfo.io/", "https://api.jikan.moe/*", "https://api.themoviedb.org/*" ],
+   "host_permissions": [ "https://ipinfo.io/", "https://api.jikan.moe/*", "https://api.themoviedb.org/*", "https://www.crunchyroll.com/*", "https://crunchyroll.com/*", "https://beta.crunchyroll.com/*", "https://static.crunchyroll.com/*" ],
    "icons": {
       "128": "icon/icon128.png",
       "16": "icon/icon16.png",
@@ -143,9 +150,9 @@
    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkzd1z98QWVAvTQht9bQPSCM1RqrlVPLPRDs51TyHQrAT8chY0lK5xOKfS0Vo2ALcb1Lxrc8FGv/hvKe25HcFawNZcP77SUjc84X3syGIUFKHAdpE4US6hg88KDaKKRC+o+lrOCLDed1hj/rrrdmEyuQej/7BRS+crZqUPooPEYjbKDjbbga3SMfOV3YfcMIM8IOVMoGiZzKE8Pf7Mb6+w+yVEG6K+PCBj6fZc3FO3HpmI931P6dLpGuP+vbuHYk97QjI8PmAXQZi4zxE118ZIdlxmvtRquw7TXdtMWwYDy9Yb/VXcswYZ/IpcdDcOVY2kz41QrqZM949UZKT2HVFXwIDAQAB",
    "manifest_version": 3,
    "name": "Crunchyroll Better Web",
-   "permissions": [ "storage" ],
+   "permissions": [ "storage", "scripting" ],
    "update_url": "https://clients2.google.com/service/update2/crx",
-   "version": "1.8",
+   "version": "1.9",
    "web_accessible_resources": [ {
       "matches": [ "https://www.crunchyroll.com/*" ],
       "resources": [ "database/animeDB.json", "database/animeFall2025DB.json", "database/animeMoviesDB.json", "database/NewCardsCR.json", "database/ContdownDB.json" ]

@@ -1,4 +1,12 @@
     const NEW_EPISODE_SETTING_KEY = 'newEpisodeLabel';
+    const ENTER_TO_SKIP_SETTING_KEY = 'enterToSkipPrompts';
+    const IS_TOP_FRAME = (() => {
+        try {
+            return window.top === window.self;
+        } catch (error) {
+            return true;
+        }
+    })();
 
 
 
@@ -229,6 +237,10 @@ function applyNewEpisodeLabel() {
 // ======================================================================
 
 function initializeNewEpisodeFeature() {
+    if (!IS_TOP_FRAME) {
+        return;
+    }
+
     chrome.storage.local.get([NEW_EPISODE_SETTING_KEY], (settings) => {
         
         const isNewEpisodeEnabled = settings[NEW_EPISODE_SETTING_KEY]; 
@@ -247,3 +259,276 @@ function initializeNewEpisodeFeature() {
 // 4. SCRIPT START
 // ======================================================================
 initializeNewEpisodeFeature();
+
+function initializeEnterToSkipPrompts() {
+    const WATCH_PATH_SEGMENT = '/watch/';
+    const SEEK_SECONDS = 5;
+    const SKIP_KEYWORDS = ['skip intro', 'skip credits', 'skip recap', 'skip'];
+    const KNOWN_SKIP_WRAPPER_SELECTOR = '[data-testid="skipButton"]';
+    const KNOWN_SKIP_TEXT_SELECTOR = '[data-testid="skipIntroText"]';
+    const KNOWN_SKIP_BUTTON_SELECTOR = [
+        '[data-testid="skipButton"] [role="button"]',
+        '[data-testid="skipButton"] [tabindex]',
+        '[role="button"][aria-label*="Skip"]',
+        '[role="button"][aria-label*="skip"]'
+    ].join(', ');
+    const DEBUG_PREFIX = '[CR Better Web][Enter To Skip]';
+    const SKIP_BROADCAST_TYPE = 'CRBW_ENTER_TO_SKIP_TRIGGER';
+    const PLAYER_REGION_SELECTOR = [
+        KNOWN_SKIP_WRAPPER_SELECTOR,
+        '[data-t*="player"]',
+        '[data-t*="Player"]',
+        '[class*="player"]',
+        '[class*="Player"]',
+        '[class*="vilos"]',
+        '[class*="Vilos"]',
+        '[class*="watch"]',
+        '[class*="Watch"]',
+        '.top-controls'
+    ].join(', ');
+    const CLICKABLE_SELECTOR = 'button, [role="button"], [tabindex]';
+
+    let isFeatureEnabled = true;
+
+    function debugLog(message, details) {
+        if (typeof details === 'undefined') {
+            console.log(`${DEBUG_PREFIX} ${message}`);
+            return;
+        }
+
+        console.log(`${DEBUG_PREFIX} ${message}`, details);
+    }
+
+    function isWatchPage() {
+        return (
+            window.location.pathname.includes(WATCH_PATH_SEGMENT)
+            || window.location.pathname.includes('/vilos/player.html')
+        );
+    }
+
+    function isEditableTarget(target) {
+        if (!(target instanceof Element)) {
+            return false;
+        }
+
+        return Boolean(target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]'));
+    }
+
+    function isElementVisible(element) {
+        if (!(element instanceof HTMLElement)) {
+            return false;
+        }
+
+        const style = window.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+
+        return (
+            style.display !== 'none'
+            && style.visibility !== 'hidden'
+            && rect.width > 0
+            && rect.height > 0
+        );
+    }
+
+    function isElementEnabled(element) {
+        if (element instanceof HTMLButtonElement) {
+            return !element.disabled;
+        }
+
+        return element.getAttribute('aria-disabled') !== 'true';
+    }
+
+    function getAccessibleLabel(element) {
+        return [
+            element.getAttribute('aria-label'),
+            element.getAttribute('title'),
+            element.textContent
+        ]
+            .map((value) => String(value || '').trim().toLowerCase())
+            .filter(Boolean)
+            .join(' ');
+    }
+
+    function isKnownSkipPrompt(element) {
+        return Boolean(
+            element.closest(KNOWN_SKIP_WRAPPER_SELECTOR)
+            || element.querySelector(KNOWN_SKIP_TEXT_SELECTOR)
+        );
+    }
+
+    function hasSkipLabel(element) {
+        const label = getAccessibleLabel(element);
+        return SKIP_KEYWORDS.some((keyword) => label.includes(keyword));
+    }
+
+    function scoreCandidate(element) {
+        const label = getAccessibleLabel(element);
+        let score = 0;
+
+        if (isKnownSkipPrompt(element)) {
+            score += 200;
+        }
+
+        if (label.includes('skip intro')) {
+            score += 100;
+        } else if (label.includes('skip credits')) {
+            score += 90;
+        } else if (label.includes('skip recap')) {
+            score += 80;
+        } else if (label.includes('skip')) {
+            score += 60;
+        }
+
+        if (element.closest(PLAYER_REGION_SELECTOR)) {
+            score += 40;
+        }
+
+        return score;
+    }
+
+    function getKnownSkipCandidates() {
+        return Array.from(document.querySelectorAll(KNOWN_SKIP_BUTTON_SELECTOR))
+            .filter((element) => element instanceof HTMLElement)
+            .filter((element) => isElementEnabled(element))
+            .filter((element) => hasSkipLabel(element) || isKnownSkipPrompt(element));
+    }
+
+    function requestSkipClickFromBackground(source) {
+        debugLog(`Forwarding direct skip click request from ${source}.`);
+
+        chrome.runtime.sendMessage({ action: 'clickSkipIntro' }, (response) => {
+            if (chrome.runtime.lastError) {
+                debugLog('Background skip click failed.', {
+                    error: chrome.runtime.lastError.message
+                });
+                return;
+            }
+
+            debugLog('Background skip click response.', response);
+        });
+    }
+
+    function requestVideoSeekFromBackground(deltaSeconds, source) {
+        debugLog(`Forwarding video seek request from ${source}.`, {
+            deltaSeconds
+        });
+
+        chrome.runtime.sendMessage({ action: 'seekVideo', deltaSeconds }, (response) => {
+            if (chrome.runtime.lastError) {
+                debugLog('Background video seek failed.', {
+                    error: chrome.runtime.lastError.message
+                });
+                return;
+            }
+
+            debugLog('Background video seek response.', response);
+        });
+    }
+
+    function requestPlaybackToggleFromBackground(source) {
+        debugLog(`Forwarding playback toggle request from ${source}.`);
+
+        chrome.runtime.sendMessage({ action: 'togglePlayback' }, (response) => {
+            if (chrome.runtime.lastError) {
+                debugLog('Background playback toggle failed.', {
+                    error: chrome.runtime.lastError.message
+                });
+                return;
+            }
+
+            debugLog('Background playback toggle response.', response);
+        });
+    }
+
+    function handleKeydown(event) {
+        debugLog('Keydown detected.', {
+            key: event.key,
+            defaultPrevented: event.defaultPrevented,
+            repeat: event.repeat,
+            targetTagName: event.target instanceof Element ? event.target.tagName : null
+        });
+
+        if (!isFeatureEnabled || !isWatchPage()) {
+            debugLog('Ignoring keydown because feature is disabled or page is not a watch page.', {
+                isFeatureEnabled,
+                pathname: window.location.pathname
+            });
+            return;
+        }
+
+        if (
+            event.repeat
+            || event.defaultPrevented
+            || event.altKey
+            || event.ctrlKey
+            || event.metaKey
+            || event.shiftKey
+        ) {
+            debugLog('Ignoring keydown because it is not an unmodified supported key press.');
+            return;
+        }
+
+        if (isEditableTarget(event.target)) {
+            debugLog('Ignoring keydown because the target is editable.');
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            event.stopPropagation();
+            requestSkipClickFromBackground('keydown');
+            return;
+        }
+
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            event.stopPropagation();
+            requestVideoSeekFromBackground(-SEEK_SECONDS, 'keydown');
+            return;
+        }
+
+        if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            event.stopPropagation();
+            requestVideoSeekFromBackground(SEEK_SECONDS, 'keydown');
+            return;
+        }
+
+        if (event.key === ' ' || event.code === 'Space') {
+            event.preventDefault();
+            event.stopPropagation();
+            requestPlaybackToggleFromBackground('keydown');
+            return;
+        }
+
+        debugLog('Ignoring keydown because it is not a supported key.');
+    }
+
+    chrome.storage.local.get([ENTER_TO_SKIP_SETTING_KEY], (settings) => {
+        isFeatureEnabled = settings[ENTER_TO_SKIP_SETTING_KEY] !== false;
+        debugLog('Initialized feature state.', {
+            isFeatureEnabled,
+            isTopFrame: IS_TOP_FRAME,
+            hostname: window.location.hostname,
+            pathname: window.location.pathname
+        });
+    });
+
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== 'local' || !changes[ENTER_TO_SKIP_SETTING_KEY]) {
+            return;
+        }
+
+        isFeatureEnabled = changes[ENTER_TO_SKIP_SETTING_KEY].newValue !== false;
+        debugLog('Feature toggle changed.', { isFeatureEnabled });
+    });
+
+    document.addEventListener('keydown', handleKeydown, true);
+    debugLog('Attached keydown listener.', {
+        isTopFrame: IS_TOP_FRAME,
+        hostname: window.location.hostname,
+        pathname: window.location.pathname
+    });
+}
+
+initializeEnterToSkipPrompts();

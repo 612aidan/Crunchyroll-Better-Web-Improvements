@@ -62,6 +62,9 @@
   "labelCountdown": {
     "message": "Mostrar Contagem Regressiva de Episódios"
   },
+  "labelEnterToSkip": {
+    "message": "Pressionar Enter Para Pular"
+  },
   "labelNewEpisode": {
     "message": "Etiqueta de Novo Episódio"
   }

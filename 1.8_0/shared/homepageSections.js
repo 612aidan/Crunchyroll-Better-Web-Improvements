@@ -505,7 +505,17 @@
         const DYNAMIC_FEED_WRAPPER_SELECTOR = '.dynamic-feed-wrapper';
         const SECTION_HEADING_SELECTOR = 'h2, .browse-collection-title, .feed-header__title--DMRD6';
         const BUILTIN_SECTION_WRAPPER_SELECTOR = 'div[data-id]';
-        const BUILTIN_SECTION_CONTENT_SELECTOR = '[data-t^="personalized-collection-"], [data-t*="collection"]';
+        const CONTINUE_WATCHING_LABEL = 'Continue Watching';
+        const CONTINUE_WATCHING_TRACK_SELECTOR = [
+            '.erc-history-collection[data-t="history"]',
+            '.erc-history-collection',
+            '[data-t="history"]'
+        ].join(', ');
+        const BUILTIN_SECTION_CONTENT_SELECTOR = [
+            '[data-t^="personalized-collection-"]',
+            '[data-t*="collection"]',
+            CONTINUE_WATCHING_TRACK_SELECTOR
+        ].join(', ');
         let lastDiscoveredSignature = '';
         let scheduledRefresh = null;
         let refreshIntervalId = null;
@@ -550,6 +560,10 @@
 
         const directDataId = element.getAttribute('data-id');
         if (directDataId) {
+            if (element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)) {
+                return true;
+            }
+
             return Boolean(
                 element.querySelector(SECTION_HEADING_SELECTOR)
                 && element.querySelector(BUILTIN_SECTION_CONTENT_SELECTOR)
@@ -581,6 +595,10 @@
         const heading = element.querySelector(SECTION_HEADING_SELECTOR);
         if (heading?.textContent) {
             return heading.textContent.trim();
+        }
+
+        if (element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)) {
+            return CONTINUE_WATCHING_LABEL;
         }
 
         return 'Untitled Section';

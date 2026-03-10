@@ -44,6 +44,9 @@
    "labelCountdown": {
       "message": "Episoden-Countdown anzeigen"
    },
+   "labelEnterToSkip": {
+      "message": "Enter Zum Überspringen Drücken"
+   },
    "labelFillers": {
       "message": "Filler-Tag"
    },

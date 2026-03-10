@@ -3,6 +3,7 @@
         legacyInitialized: Boolean(globalThis.__CRBW_HOMEPAGE_LAYOUT_MANAGER_INITIALIZED__),
         standaloneInitialized: Boolean(globalThis.__CRBW_DYNAMIC_FEED_LAYOUT_MANAGER_INITIALIZED__)
     });
+    console.warn('[CRBW][HomepageLayout][CW] Homepage Layout Manager Script Evaluated');
 
     if (globalThis.__CRBW_DYNAMIC_FEED_LAYOUT_MANAGER_INITIALIZED__) {
         return;
@@ -47,9 +48,22 @@
     ].join(', ');
     const HERO_CAROUSEL_STYLE_ID = 'crbw-hide-hero-carousel-style';
     const HERO_CAROUSEL_HIDE_ATTR = 'data-crbw-hide-hero-carousel';
+    const CONTINUE_WATCHING_STYLE_ID = 'crbw-continue-watching-carousel-style';
+    const CONTINUE_WATCHING_SECTION_LABEL = 'Continue Watching';
+    const CONTINUE_WATCHING_LABEL = 'continue watching';
+    const CONTINUE_WATCHING_ITEM_SELECTOR = '.collection-item';
+    const CONTINUE_WATCHING_TRACK_SELECTOR = [
+        '.erc-history-collection[data-t="history"]',
+        '.erc-history-collection',
+        '[data-t="history"]'
+    ].join(', ');
     const SECTION_HEADING_SELECTOR = 'h2, .browse-collection-title, .feed-header__title--DMRD6';
     const BUILTIN_SECTION_WRAPPER_SELECTOR = 'div[data-id]';
-    const BUILTIN_SECTION_CONTENT_SELECTOR = '[data-t^="personalized-collection-"], [data-t*="collection"]';
+    const BUILTIN_SECTION_CONTENT_SELECTOR = [
+        '[data-t^="personalized-collection-"]',
+        '[data-t*="collection"]',
+        CONTINUE_WATCHING_TRACK_SELECTOR
+    ].join(', ');
 
     let lastDiscoveredSignature = '';
     let scheduledRefresh = null;
@@ -262,6 +276,10 @@
             return false;
         }
 
+        if (element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)) {
+            return true;
+        }
+
         return Boolean(
             element.querySelector(SECTION_HEADING_SELECTOR)
             && element.querySelector(BUILTIN_SECTION_CONTENT_SELECTOR)
@@ -278,6 +296,10 @@
         const heading = element.querySelector(SECTION_HEADING_SELECTOR);
         if (heading?.textContent) {
             return heading.textContent.trim();
+        }
+
+        if (element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)) {
+            return CONTINUE_WATCHING_SECTION_LABEL;
         }
 
         return 'Untitled Section';
@@ -369,6 +391,385 @@
                 ariaLabel: element.getAttribute('aria-label')
             }))
         });
+    }
+
+    function normalizeSectionLabel(value) {
+        return String(value || '')
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+    }
+
+    function logContinueWatchingProbe(wrapper) {
+        const headings = Array.from(document.querySelectorAll(SECTION_HEADING_SELECTOR))
+            .map((element) => element.textContent?.trim())
+            .filter(Boolean);
+        const continueWatchingHeading = Array.from(document.querySelectorAll(SECTION_HEADING_SELECTOR))
+            .find((element) => normalizeSectionLabel(element.textContent) === CONTINUE_WATCHING_LABEL);
+        const globalTrack = document.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR);
+        const wrapperChildren = wrapper instanceof HTMLElement
+            ? Array.from(wrapper.children).filter((child) => child instanceof HTMLElement)
+            : [];
+        const wrapperLabels = wrapperChildren.map((child) => {
+            const heading = child.querySelector(SECTION_HEADING_SELECTOR);
+            return heading?.textContent?.trim() || null;
+        }).filter(Boolean);
+
+        logLayoutDebug('Continue Watching Probe', {
+            hasWrapper: wrapper instanceof HTMLElement,
+            totalHeadingCount: headings.length,
+            sampleHeadings: headings.slice(0, 12),
+            hasContinueWatchingHeading: continueWatchingHeading instanceof HTMLElement,
+            continueWatchingHeadingText: continueWatchingHeading?.textContent?.trim() || null,
+            hasGlobalHistoryTrack: globalTrack instanceof HTMLElement,
+            globalHistoryTrackClassName: globalTrack instanceof HTMLElement ? globalTrack.className : null,
+            wrapperChildCount: wrapperChildren.length,
+            wrapperLabels
+        });
+        console.warn('[CRBW][HomepageLayout][CW] Continue Watching Probe', {
+            hasWrapper: wrapper instanceof HTMLElement,
+            hasContinueWatchingHeading: continueWatchingHeading instanceof HTMLElement,
+            continueWatchingHeadingText: continueWatchingHeading?.textContent?.trim() || null,
+            hasGlobalHistoryTrack: globalTrack instanceof HTMLElement,
+            wrapperChildCount: wrapperChildren.length,
+            wrapperLabels
+        });
+    }
+
+    function ensureContinueWatchingStyles() {
+        let styleElement = document.getElementById(CONTINUE_WATCHING_STYLE_ID);
+
+        if (styleElement instanceof HTMLStyleElement) {
+            logLayoutDebug('Continue Watching Styles Already Present', {
+                styleId: CONTINUE_WATCHING_STYLE_ID
+            });
+            return;
+        }
+
+        styleElement = document.createElement('style');
+        styleElement.id = CONTINUE_WATCHING_STYLE_ID;
+        styleElement.textContent = `
+            .crbw-continue-watching-carousel-shell {
+                position: relative;
+            }
+
+            .crbw-continue-watching-carousel-content {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .crbw-continue-watching-carousel-track {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                gap: 16px;
+                overflow-x: auto;
+                overflow-y: visible;
+                scroll-behavior: smooth;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                padding: 4px 2px 8px;
+                width: 100%;
+            }
+
+            .crbw-continue-watching-carousel-track::-webkit-scrollbar {
+                display: none;
+            }
+
+            .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
+                flex: 0 0 calc((100% - 80px) / 6);
+                min-width: 0;
+            }
+
+            .crbw-continue-watching-arrow {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 40px;
+                border: 0;
+                border-radius: 999px;
+                background: rgba(20, 21, 26, 0.88);
+                color: #ffffff;
+                cursor: pointer;
+                flex: 0 0 auto;
+                transition: opacity 120ms ease, background 120ms ease;
+                z-index: 1;
+            }
+
+            .crbw-continue-watching-arrow:hover:not(:disabled) {
+                background: rgba(35, 37, 45, 0.96);
+            }
+
+            .crbw-continue-watching-arrow:disabled {
+                opacity: 0.35;
+                cursor: default;
+            }
+
+            .crbw-continue-watching-arrow span {
+                font-size: 22px;
+                line-height: 1;
+            }
+
+            @media (max-width: 107.49em) {
+                .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
+                    flex-basis: calc((100% - 64px) / 5);
+                }
+            }
+
+            @media (max-width: 49.99em) {
+                .crbw-continue-watching-carousel-content {
+                    gap: 10px;
+                }
+
+                .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
+                    flex-basis: calc((100% - 48px) / 4);
+                }
+            }
+
+            @media (max-width: 35.49em) {
+                .crbw-continue-watching-arrow {
+                    width: 36px;
+                    height: 36px;
+                }
+
+                .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
+                    flex-basis: calc((100% - 32px) / 3);
+                }
+            }
+
+            @media (max-width: 29.99em) {
+                .crbw-continue-watching-carousel-content {
+                    gap: 8px;
+                }
+
+                .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
+                    flex-basis: calc((100% - 16px) / 2);
+                }
+            }
+        `;
+
+        document.documentElement.appendChild(styleElement);
+        logLayoutDebug('Continue Watching Styles Injected', {
+            styleId: CONTINUE_WATCHING_STYLE_ID
+        });
+    }
+
+    function updateContinueWatchingArrowVisibility(track, leftButton, rightButton) {
+        const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
+        const scrollLeft = track.scrollLeft;
+
+        leftButton.disabled = scrollLeft <= 4;
+        rightButton.disabled = scrollLeft >= maxScrollLeft - 4;
+    }
+
+    function getContinueWatchingScrollStep(track) {
+        const firstItem = track.querySelector(CONTINUE_WATCHING_ITEM_SELECTOR);
+        if (!(firstItem instanceof HTMLElement)) {
+            return track.clientWidth;
+        }
+
+        const itemRect = firstItem.getBoundingClientRect();
+        const itemStyle = window.getComputedStyle(firstItem);
+        const gap = parseFloat(itemStyle.marginLeft || '0') + parseFloat(itemStyle.marginRight || '0');
+        const itemWidth = itemRect.width + gap;
+        const visibleItems = Math.max(1, Math.round(track.clientWidth / Math.max(itemWidth, 1)));
+
+        return itemWidth * visibleItems;
+    }
+
+    function bindContinueWatchingCarousel(sectionElement, track) {
+        if (track.dataset.crbwContinueWatchingBound === 'true') {
+            const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
+            const rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
+
+            if (leftButton instanceof HTMLButtonElement && rightButton instanceof HTMLButtonElement) {
+                updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
+                logLayoutDebug('Continue Watching Carousel Already Bound', {
+                    sectionLabel: getSectionLabel(sectionElement),
+                    itemCount: track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`).length,
+                    scrollWidth: track.scrollWidth,
+                    clientWidth: track.clientWidth,
+                    leftDisabled: leftButton.disabled,
+                    rightDisabled: rightButton.disabled
+                });
+            }
+
+            return;
+        }
+
+        const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
+        const rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
+
+        if (!(leftButton instanceof HTMLButtonElement) || !(rightButton instanceof HTMLButtonElement)) {
+            logLayoutDebug('Continue Watching Carousel Missing Arrows Before Bind', {
+                sectionLabel: getSectionLabel(sectionElement),
+                hasLeftButton: leftButton instanceof HTMLButtonElement,
+                hasRightButton: rightButton instanceof HTMLButtonElement
+            });
+            return;
+        }
+
+        const handleScroll = () => {
+            updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
+        };
+
+        const handleButtonClick = (direction) => {
+            const step = getContinueWatchingScrollStep(track) * direction;
+            track.scrollBy({ left: step, behavior: 'smooth' });
+        };
+
+        track.dataset.crbwContinueWatchingBound = 'true';
+        handleScroll();
+        logLayoutDebug('Continue Watching Carousel Bound', {
+            sectionLabel: getSectionLabel(sectionElement),
+            itemCount: track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`).length,
+            scrollWidth: track.scrollWidth,
+            clientWidth: track.clientWidth,
+            scrollStep: getContinueWatchingScrollStep(track),
+            leftDisabled: leftButton.disabled,
+            rightDisabled: rightButton.disabled
+        });
+
+        track.addEventListener('scroll', handleScroll);
+        window.addEventListener('resize', handleScroll);
+        leftButton.addEventListener('click', () => handleButtonClick(-1));
+        rightButton.addEventListener('click', () => handleButtonClick(1));
+
+        if (typeof ResizeObserver === 'function') {
+            const resizeObserver = new ResizeObserver(() => {
+                handleScroll();
+            });
+
+            resizeObserver.observe(track);
+            Array.from(track.querySelectorAll('img')).forEach((image) => resizeObserver.observe(image));
+        }
+
+        Array.from(track.querySelectorAll('img')).forEach((image) => {
+            if (image.complete) {
+                return;
+            }
+
+            image.addEventListener('load', handleScroll, { once: true });
+            image.addEventListener('error', handleScroll, { once: true });
+        });
+
+        requestAnimationFrame(() => {
+            handleScroll();
+            requestAnimationFrame(handleScroll);
+        });
+    }
+
+    function enhanceContinueWatchingCarousel(sectionElement) {
+        if (!(sectionElement instanceof HTMLElement)) {
+            logLayoutDebug('Continue Watching Enhancement Skipped', {
+                reason: 'sectionElement-not-html'
+            });
+            return;
+        }
+
+        const sectionLabel = getSectionLabel(sectionElement);
+        const track = sectionElement.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR);
+        if (!(track instanceof HTMLElement)) {
+            logLayoutDebug('Continue Watching Track Not Found', {
+                sectionLabel,
+                selectors: CONTINUE_WATCHING_TRACK_SELECTOR
+            });
+            return;
+        }
+
+        const items = Array.from(track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
+            .filter((item) => item instanceof HTMLElement);
+
+        if (items.length === 0) {
+            logLayoutDebug('Continue Watching Items Not Found', {
+                sectionLabel,
+                trackClassName: track.className,
+                childCount: track.children.length
+            });
+            return;
+        }
+
+        logLayoutDebug('Continue Watching Enhancement Starting', {
+            sectionLabel,
+            trackClassName: track.className,
+            itemCount: items.length,
+            scrollWidth: track.scrollWidth,
+            clientWidth: track.clientWidth,
+            existingShell: sectionElement.querySelector('.crbw-continue-watching-carousel-shell') instanceof HTMLElement,
+            existingLeftArrow: sectionElement.querySelector('.crbw-continue-watching-arrow-left') instanceof HTMLButtonElement,
+            existingRightArrow: sectionElement.querySelector('.crbw-continue-watching-arrow-right') instanceof HTMLButtonElement
+        });
+
+        ensureContinueWatchingStyles();
+
+        let shell = sectionElement.querySelector('.crbw-continue-watching-carousel-shell');
+        let content = sectionElement.querySelector('.crbw-continue-watching-carousel-content');
+        let leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
+        let rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
+
+        if (!(shell instanceof HTMLElement)) {
+            shell = document.createElement('div');
+            shell.className = 'crbw-continue-watching-carousel-shell';
+        }
+
+        if (!(content instanceof HTMLElement)) {
+            content = document.createElement('div');
+            content.className = 'crbw-continue-watching-carousel-content';
+        }
+
+        if (!(leftButton instanceof HTMLButtonElement)) {
+            leftButton = document.createElement('button');
+            leftButton.className = 'crbw-continue-watching-arrow crbw-continue-watching-arrow-left';
+            leftButton.type = 'button';
+            leftButton.setAttribute('aria-label', 'Previous');
+            leftButton.innerHTML = '<span>&#10094;</span>';
+        }
+
+        if (!(rightButton instanceof HTMLButtonElement)) {
+            rightButton = document.createElement('button');
+            rightButton.className = 'crbw-continue-watching-arrow crbw-continue-watching-arrow-right';
+            rightButton.type = 'button';
+            rightButton.setAttribute('aria-label', 'Next');
+            rightButton.innerHTML = '<span>&#10095;</span>';
+        }
+
+        track.classList.add('crbw-continue-watching-carousel-track');
+
+        if (!content.contains(leftButton)) {
+            content.appendChild(leftButton);
+        }
+
+        if (track.parentElement !== content) {
+            content.appendChild(track);
+        }
+
+        if (!content.contains(rightButton)) {
+            content.appendChild(rightButton);
+        }
+
+        if (!shell.contains(content)) {
+            shell.appendChild(content);
+        }
+
+        if (shell.parentElement !== sectionElement) {
+            sectionElement.appendChild(shell);
+        }
+
+        logLayoutDebug('Continue Watching Enhancement Applied DOM', {
+            sectionLabel,
+            shellConnected: shell.isConnected,
+            contentConnected: content.isConnected,
+            leftArrowConnected: leftButton.isConnected,
+            rightArrowConnected: rightButton.isConnected,
+            trackParentClassName: track.parentElement?.className || null,
+            sectionChildCount: sectionElement.children.length
+        });
+
+        bindContinueWatchingCarousel(sectionElement, track);
     }
 
     function collectHomepageSections() {
@@ -471,6 +872,8 @@
                     return;
                 }
 
+                logContinueWatchingProbe(wrapper);
+
                 const discoveredSections = collectHomepageSections();
                 const discoveredSignature = JSON.stringify(
                     discoveredSections.map((section) => ({
@@ -532,6 +935,15 @@
                 orderedVisibleSections.forEach((section) => {
                     if (section.element.parentElement !== wrapper) {
                         wrapper.appendChild(section.element);
+                    }
+                });
+
+                orderedVisibleSections.forEach((section) => {
+                    if (
+                        section.kind === 'builtin'
+                        && normalizeSectionLabel(section.label) === CONTINUE_WATCHING_LABEL
+                    ) {
+                        enhanceContinueWatchingCarousel(section.element);
                     }
                 });
 

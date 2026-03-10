@@ -71,6 +71,9 @@
    "labelCountdown": {
       "message": "Show Episode Countdown"
    },
+   "labelEnterToSkip": {
+      "message": "Press Enter To Skip"
+   },
    "labelFillers": {
       "message": "Filler Tag"
    },

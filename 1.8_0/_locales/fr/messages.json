@@ -44,6 +44,9 @@
    "labelCountdown": {
       "message": "Afficher le Compte à Rebours des Épisodes"
    },
+   "labelEnterToSkip": {
+      "message": "Appuyer Sur Entrée Pour Passer"
+   },
    "labelFillers": {
       "message": "Étiquette Filler"
    },

@@ -8,6 +8,7 @@ const SPOILERS_SETTING_KEY = 'hideSpoilers';
 const SCORE_SETTING_KEY = 'scoreLabel';
 const FLAG_SETTING_KEY = 'flagLabel';
 const COUNTDOWN_SETTING_KEY = 'countdownLabel'; 
+const ENTER_TO_SKIP_SETTING_KEY = 'enterToSkipPrompts';
 const HOMEPAGE_SECTIONS_STORAGE_KEY = 'homepageSections';
 const DEFAULT_HOMEPAGE_SECTIONS = [
     { id: 'next-season', enabled: true, order: 0 },
@@ -44,15 +45,24 @@ chrome.runtime.onInstalled.addListener((details) => {
         defaultSettings[MEDIA_SETTING_KEY] = true;
         defaultSettings[FILLER_SETTING_KEY] = true;
         defaultSettings[AWARD_SETTING_KEY] = true;
-	    defaultSettings[SCORE_SETTING_KEY] = true;
+        defaultSettings[SCORE_SETTING_KEY] = true;
         defaultSettings[FLAG_SETTING_KEY] = true;
         defaultSettings[COUNTDOWN_SETTING_KEY] = true;
+        defaultSettings[ENTER_TO_SKIP_SETTING_KEY] = true;
         defaultSettings[SPOILERS_SETTING_KEY] = false;   
         defaultSettings[HOMEPAGE_SECTIONS_STORAGE_KEY] = DEFAULT_HOMEPAGE_SECTIONS;
         
         // Save the default values
         chrome.storage.local.set(defaultSettings, () => {
             console.log("Initial configuration saved: default options enabled.");
+        });
+    }
+
+    if (details.reason === 'update') {
+        chrome.storage.local.get([ENTER_TO_SKIP_SETTING_KEY], (items) => {
+            if (typeof items[ENTER_TO_SKIP_SETTING_KEY] === 'undefined') {
+                chrome.storage.local.set({ [ENTER_TO_SKIP_SETTING_KEY]: true });
+            }
         });
     }
 });
@@ -119,6 +129,209 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    if (request.action === 'clickSkipIntro') {
+        if (!sender.tab?.id) {
+            sendResponse({ ok: false, error: 'Missing tab context.' });
+            return false;
+        }
+
+        chrome.scripting.executeScript(
+            {
+                target: { tabId: sender.tab.id, allFrames: true },
+                func: () => {
+                    const button = document.querySelector('[data-testid="skipButton"] [role="button"]');
+
+                    if (!(button instanceof HTMLElement)) {
+                        return {
+                            href: window.location.href,
+                            clicked: false
+                        };
+                    }
+
+                    button.click();
+
+                    return {
+                        href: window.location.href,
+                        clicked: true
+                    };
+                }
+            },
+            (results) => {
+                if (chrome.runtime.lastError) {
+                    sendResponse({
+                        ok: false,
+                        error: chrome.runtime.lastError.message
+                    });
+                    return;
+                }
+
+                sendResponse({
+                    ok: true,
+                    results: Array.isArray(results)
+                        ? results.map((result) => ({
+                            frameId: result.frameId,
+                            ...result.result
+                        }))
+                        : []
+                });
+            }
+        );
+
+        return true;
+    }
+
+    if (request.action === 'seekVideo') {
+        if (!sender.tab?.id) {
+            sendResponse({ ok: false, error: 'Missing tab context.' });
+            return false;
+        }
+
+        const deltaSeconds = Number(request.deltaSeconds);
+        if (!Number.isFinite(deltaSeconds)) {
+            sendResponse({ ok: false, error: 'Invalid seek delta.' });
+            return false;
+        }
+
+        if (!chrome.scripting?.executeScript) {
+            sendResponse({ ok: false, error: 'chrome.scripting.executeScript is unavailable.' });
+            return false;
+        }
+
+        try {
+            chrome.scripting.executeScript(
+                {
+                    target: { tabId: sender.tab.id, allFrames: true },
+                    args: [deltaSeconds],
+                    func: (delta) => {
+                        const video = document.querySelector('video');
+
+                        if (!(video instanceof HTMLMediaElement)) {
+                            return {
+                                href: window.location.href,
+                                seeked: false
+                            };
+                        }
+
+                        const duration = Number.isFinite(video.duration) ? video.duration : Number.MAX_SAFE_INTEGER;
+                        const previousTime = video.currentTime;
+                        const nextTime = Math.max(0, Math.min(previousTime + delta, duration));
+
+                        video.currentTime = nextTime;
+
+                        return {
+                            href: window.location.href,
+                            seeked: true,
+                            previousTime,
+                            nextTime
+                        };
+                    }
+                },
+                (results) => {
+                    if (chrome.runtime.lastError) {
+                        sendResponse({
+                            ok: false,
+                            error: chrome.runtime.lastError.message
+                        });
+                        return;
+                    }
+
+                    sendResponse({
+                        ok: true,
+                        results: Array.isArray(results)
+                            ? results.map((result) => ({
+                                frameId: result.frameId,
+                                ...result.result
+                            }))
+                            : []
+                    });
+                }
+            );
+        } catch (error) {
+            sendResponse({
+                ok: false,
+                error: error instanceof Error ? error.message : String(error)
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    if (request.action === 'togglePlayback') {
+        if (!sender.tab?.id) {
+            sendResponse({ ok: false, error: 'Missing tab context.' });
+            return false;
+        }
+
+        if (!chrome.scripting?.executeScript) {
+            sendResponse({ ok: false, error: 'chrome.scripting.executeScript is unavailable.' });
+            return false;
+        }
+
+        try {
+            chrome.scripting.executeScript(
+                {
+                    target: { tabId: sender.tab.id, allFrames: true },
+                    func: () => {
+                        const video = document.querySelector('video');
+
+                        if (!(video instanceof HTMLMediaElement)) {
+                            return {
+                                href: window.location.href,
+                                toggled: false
+                            };
+                        }
+
+                        if (video.paused) {
+                            const playPromise = video.play();
+
+                            if (playPromise && typeof playPromise.catch === 'function') {
+                                playPromise.catch(() => {});
+                            }
+                        } else {
+                            video.pause();
+                        }
+
+                        return {
+                            href: window.location.href,
+                            toggled: true,
+                            paused: video.paused
+                        };
+                    }
+                },
+                (results) => {
+                    if (chrome.runtime.lastError) {
+                        sendResponse({
+                            ok: false,
+                            error: chrome.runtime.lastError.message
+                        });
+                        return;
+                    }
+
+                    sendResponse({
+                        ok: true,
+                        results: Array.isArray(results)
+                            ? results.map((result) => ({
+                                frameId: result.frameId,
+                                ...result.result
+                            }))
+                            : []
+                    });
+                }
+            );
+        } catch (error) {
+            sendResponse({
+                ok: false,
+                error: error instanceof Error ? error.message : String(error)
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    return false;
+ 
 });
 
 

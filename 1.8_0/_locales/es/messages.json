@@ -59,6 +59,10 @@
       "description": "Label for the episode countdown toggle option.",
       "message": "Show Countdown"
    },
+   "labelEnterToSkip": {
+      "description": "Label for the Enter-to-skip toggle option.",
+      "message": "Presionar Enter Para Saltar"
+   },
    "labelFillers": {
       "description": "Label for the filler episodes toggle option.",
       "message": "Filler Label"

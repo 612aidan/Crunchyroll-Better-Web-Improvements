@@ -169,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('feature-settings-title').textContent = getMessage('featureSettingsTitle', 'Feature Settings');
 
         document.getElementById('switch-label-spoilers').textContent = getMessage('labelSpoilers', 'Hide Spoilers');
+        document.getElementById('switch-label-enter-to-skip').textContent = getMessage('labelEnterToSkip', 'Press Enter To Skip');
         document.getElementById('switch-label-fillers').textContent = getMessage('labelFillers', 'Filler Tag');
         document.getElementById('switch-label-media').textContent = getMessage('labelMediaFormat', 'Format Tag');
         document.getElementById('switch-label-award').textContent = getMessage('labelAward', 'Anime Award Tag');

@@ -44,6 +44,9 @@
    "labelCountdown": {
       "message": "Mostra Conto alla Rovescia Episodi"
    },
+   "labelEnterToSkip": {
+      "message": "Premi Invio Per Saltare"
+   },
    "labelFillers": {
       "message": "Tag Filler"
    },
