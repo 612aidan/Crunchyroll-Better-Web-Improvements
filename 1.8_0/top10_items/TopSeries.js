@@ -204,9 +204,11 @@
                     overflow-y: visible;
                     overscroll-behavior-x: contain;
                     scroll-behavior: smooth;
+                    scroll-snap-type: x mandatory;
+                    scroll-padding-inline: 0;
                     scrollbar-width: none;
                     -ms-overflow-style: none;
-                    padding: 4px 2px 8px;
+                    padding: 4px 0 8px;
                     width: 100%;
                     box-sizing: border-box;
                 }
@@ -224,6 +226,8 @@
                     display: flex;
                     align-items: flex-start;
                     justify-content: center;
+                    scroll-snap-align: start;
+                    scroll-snap-stop: always;
                 }
 
                 .crbw-continue-watching-carousel-track > ${continueWatchingItemSelector} > * {
@@ -294,19 +298,6 @@
 
                 .crbw-continue-watching-arrow-right {
                     right: 10px;
-                }
-
-                @media (max-width: 107.49em) {
-                    .crbw-continue-watching-arrow {
-                        top: 90px;
-                    }
-
-                    .crbw-continue-watching-carousel-track > ${continueWatchingItemSelector} {
-                        flex-basis: calc((100% - 48px) / 4);
-                        width: calc((100% - 48px) / 4) !important;
-                        min-width: calc((100% - 48px) / 4) !important;
-                        max-width: calc((100% - 48px) / 4) !important;
-                    }
                 }
 
                 @media (max-width: 49.99em) {
@@ -385,38 +376,14 @@
             const itemWidth = itemRect.width
                 + parseFloat(itemStyle.marginLeft || '0')
                 + parseFloat(itemStyle.marginRight || '0');
-            const visibleItems = Math.max(1, Math.round(track.clientWidth / Math.max(itemWidth, 1)));
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+            const visibleItems = viewportWidth <= 567
+                ? 2
+                : viewportWidth <= 799
+                    ? 3
+                    : 5;
 
             return itemWidth * visibleItems;
-        }
-
-        function logContinueWatchingPagingState(label, track, extra = {}) {
-            if (!(track instanceof HTMLElement)) {
-                return;
-            }
-
-            const items = Array.from(track.querySelectorAll(`:scope > ${continueWatchingItemSelector}`))
-                .filter((item) => item instanceof HTMLElement);
-            const sampledItems = items.slice(0, 8).map((item, index) => ({
-                index,
-                offsetLeft: item.offsetLeft,
-                clientWidth: item.clientWidth,
-                rectWidth: Math.round(item.getBoundingClientRect().width * 100) / 100
-            }));
-            const payload = {
-                scrollLeft: track.scrollLeft,
-                clientWidth: track.clientWidth,
-                scrollWidth: track.scrollWidth,
-                maxScrollLeft: Math.max(0, track.scrollWidth - track.clientWidth),
-                scrollStep: getContinueWatchingScrollStep(track),
-                trackGap: window.getComputedStyle(track).gap,
-                trackPaddingLeft: window.getComputedStyle(track).paddingLeft,
-                trackPaddingRight: window.getComputedStyle(track).paddingRight,
-                sampledItems,
-                ...extra
-            };
-
-            console.warn(`[CRBW][CW-Paging][TopSeries] ${label}`, payload);
         }
 
         function bindContinueWatchingCarousel(sectionElement, track, source) {
@@ -436,31 +403,17 @@
                 return;
             }
 
-            globalThis.__CRBW_DUMP_CONTINUE_WATCHING = () => {
-                logContinueWatchingPagingState('Manual Dump', track);
-            };
-
             const handleScroll = () => {
                 updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
             };
 
             const handleButtonClick = (direction) => {
                 const step = getContinueWatchingScrollStep(track) * direction;
-                logContinueWatchingPagingState('Arrow Click', track, {
-                    direction,
-                    step
-                });
                 track.scrollBy({ left: step, behavior: 'smooth' });
-                window.setTimeout(() => {
-                    logContinueWatchingPagingState('Arrow Settled', track, {
-                        direction
-                    });
-                }, 260);
             };
 
             track.dataset.crbwContinueWatchingBound = 'true';
             handleScroll();
-            logContinueWatchingPagingState('Bound', track);
 
             track.addEventListener('scroll', handleScroll);
             window.addEventListener('resize', handleScroll);
