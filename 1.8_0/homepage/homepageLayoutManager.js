@@ -570,62 +570,63 @@
 
             .crbw-continue-watching-carousel-shell {
                 position: relative;
-                width: auto;
-                inline-size: auto;
+                box-sizing: border-box;
+                overflow: visible;
+                width: 100%;
                 max-width: 100%;
                 min-width: 0;
+                padding-inline: var(--crbw-detected-homepage-inline-gutter, clamp(40px, 4vw, 56px));
             }
 
             .crbw-continue-watching-carousel-content {
                 position: relative;
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                width: auto;
-                inline-size: auto;
-                max-width: 100%;
+                width: 100%;
+                box-sizing: border-box;
                 min-width: 0;
+            }
+
+            .crbw-continue-watching-carousel-viewport {
+                overflow-x: auto;
+                overflow-y: visible;
+                overscroll-behavior-x: contain;
+                scroll-behavior: smooth;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                padding: 4px 0 8px;
+                width: 100%;
+                box-sizing: border-box;
+                min-width: 0;
+            }
+
+            .crbw-continue-watching-carousel-viewport::-webkit-scrollbar {
+                display: none;
             }
 
             .crbw-continue-watching-carousel-track {
                 display: flex !important;
                 flex-wrap: nowrap !important;
-                flex: 1 1 auto;
                 gap: 16px;
-                overflow-x: auto;
-                overflow-y: visible;
-                overscroll-behavior-x: contain;
-                scroll-behavior: smooth;
-                scroll-padding-inline: 0;
-                scroll-snap-type: x mandatory;
-                scrollbar-width: none;
-                -ms-overflow-style: none;
-                padding: 4px 0 8px;
-                max-width: 100%;
-                min-width: 0;
-                width: auto;
-            }
-
-            .crbw-continue-watching-carousel-track::-webkit-scrollbar {
-                display: none;
+                width: max-content;
+                min-width: max-content;
             }
 
             .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
-                flex: 0 0 calc((100% - 64px) / 5);
-                width: calc((100% - 64px) / 5);
-                min-width: calc((100% - 64px) / 5);
-                max-width: calc((100% - 64px) / 5);
+                flex: 0 0 var(--crbw-cw-item-width, 220px) !important;
+                width: var(--crbw-cw-item-width, 220px) !important;
+                min-width: var(--crbw-cw-item-width, 220px) !important;
+                max-width: var(--crbw-cw-item-width, 220px) !important;
                 box-sizing: border-box;
-                scroll-snap-align: none;
-                scroll-snap-stop: always;
             }
 
-            .crbw-continue-watching-carousel-track[data-crbw-continue-watching-page-size="5"] > ${CONTINUE_WATCHING_ITEM_SELECTOR}:nth-child(5n + 1),
-            .crbw-continue-watching-carousel-track[data-crbw-continue-watching-page-size="4"] > ${CONTINUE_WATCHING_ITEM_SELECTOR}:nth-child(4n + 1),
-            .crbw-continue-watching-carousel-track[data-crbw-continue-watching-page-size="3"] > ${CONTINUE_WATCHING_ITEM_SELECTOR}:nth-child(3n + 1),
-            .crbw-continue-watching-carousel-track[data-crbw-continue-watching-page-size="2"] > ${CONTINUE_WATCHING_ITEM_SELECTOR}:nth-child(2n + 1),
-            .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR}[data-crbw-continue-watching-last-page-start="true"] {
-                scroll-snap-align: start;
+            .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} > * {
+                width: 100%;
+            }
+
+            .crbw-continue-watching-carousel-track .playable-thumbnail--HKMt2,
+            .crbw-continue-watching-carousel-track [class*="playable-thumbnail--is-sized"] {
+                max-width: 100%;
             }
 
             .crbw-continue-watching-arrow {
@@ -668,16 +669,15 @@
                 right: -56px;
             }
 
+            @media (max-width: 107.49em) {
+                .crbw-continue-watching-arrow {
+                    top: 90px;
+                }
+            }
+
             @media (max-width: 49.99em) {
                 .crbw-continue-watching-arrow {
                     top: 80px;
-                }
-
-                .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
-                    flex-basis: calc((100% - 48px) / 4);
-                    width: calc((100% - 48px) / 4);
-                    min-width: calc((100% - 48px) / 4);
-                    max-width: calc((100% - 48px) / 4);
                 }
             }
 
@@ -687,23 +687,8 @@
                     height: 36px;
                     top: 72px;
                 }
-
-                .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
-                    flex-basis: calc((100% - 32px) / 3);
-                    width: calc((100% - 32px) / 3);
-                    min-width: calc((100% - 32px) / 3);
-                    max-width: calc((100% - 32px) / 3);
-                }
             }
 
-            @media (max-width: 29.99em) {
-                .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
-                    flex-basis: calc((100% - 16px) / 2);
-                    width: calc((100% - 16px) / 2);
-                    min-width: calc((100% - 16px) / 2);
-                    max-width: calc((100% - 16px) / 2);
-                }
-            }
         `;
 
         document.documentElement.appendChild(styleElement);
@@ -712,214 +697,77 @@
         });
     }
 
-    function updateContinueWatchingArrowVisibility(track, leftButton, rightButton) {
-        const pageStartItems = getContinueWatchingPageStartItems(track);
-        const scrollLeft = track.scrollLeft;
-        const threshold = 4;
-
-        if (!pageStartItems.length) {
-            leftButton.hidden = true;
-            rightButton.hidden = true;
-            return;
-        }
-
-        const firstPageOffset = Math.max(0, pageStartItems[0].offsetLeft);
-        const lastPageOffset = Math.max(0, pageStartItems[pageStartItems.length - 1].offsetLeft);
-
-        leftButton.hidden = scrollLeft <= firstPageOffset + threshold;
-        rightButton.hidden = lastPageOffset <= firstPageOffset + threshold
-            || scrollLeft >= lastPageOffset - threshold;
-    }
-
-    function getContinueWatchingScrollStep(track) {
-        const firstItem = track.querySelector(CONTINUE_WATCHING_ITEM_SELECTOR);
-        if (!(firstItem instanceof HTMLElement)) {
-            return track.clientWidth;
-        }
-
-        const itemRect = firstItem.getBoundingClientRect();
-        const itemStyle = window.getComputedStyle(firstItem);
-        const gap = parseFloat(itemStyle.marginLeft || '0') + parseFloat(itemStyle.marginRight || '0');
-        const itemWidth = itemRect.width + gap;
-        const visibleItems = Math.max(1, Math.round(track.clientWidth / Math.max(itemWidth, 1)));
-
-        return itemWidth * visibleItems;
-    }
-
-    function getContinueWatchingPageSize() {
-        const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-
-        if (viewportWidth <= 479) {
+    function getContinueWatchingVisibleItemCount(viewportWidth) {
+        if (viewportWidth <= 520) {
             return 2;
         }
 
-        if (viewportWidth <= 567) {
+        if (viewportWidth <= 760) {
             return 3;
         }
 
-        if (viewportWidth <= 799) {
+        if (viewportWidth <= 1040) {
             return 4;
         }
 
         return 5;
     }
 
-    function getContinueWatchingItemWidth(track) {
-        const firstItem = track.querySelector(CONTINUE_WATCHING_ITEM_SELECTOR);
-        if (!(firstItem instanceof HTMLElement)) {
-            return 0;
-        }
-
-        const itemRect = firstItem.getBoundingClientRect();
-        const trackStyle = window.getComputedStyle(track);
-        const gap = parseFloat(trackStyle.columnGap || trackStyle.gap || '0');
-
-        return itemRect.width + gap;
-    }
-
-    function getContinueWatchingPageStartItems(track) {
-        const items = Array.from(track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
-            .filter((item) => item instanceof HTMLElement);
-        const pageSize = getContinueWatchingPageSize();
-        const targetIndexes = [];
-
-        if (!items.length || !pageSize) {
-            return [];
-        }
-
-        for (let index = 0; index < items.length; index += pageSize) {
-            targetIndexes.push(index);
-        }
-
-        targetIndexes.push(Math.max(0, items.length - pageSize));
-
-        const uniqueTargetIndexes = Array.from(new Set(targetIndexes))
-            .filter((index) => index >= 0 && index < items.length)
-            .sort((left, right) => left - right);
-
-        items.forEach((item) => {
-            item.removeAttribute('data-crbw-continue-watching-page-start');
-            item.removeAttribute('data-crbw-continue-watching-last-page-start');
-        });
-
-        const lastPageStartIndex = uniqueTargetIndexes[uniqueTargetIndexes.length - 1];
-        if (items[lastPageStartIndex] instanceof HTMLElement) {
-            items[lastPageStartIndex].setAttribute('data-crbw-continue-watching-last-page-start', 'true');
-        }
-
-        return uniqueTargetIndexes.map((index) => {
-            const item = items[index];
-            item.setAttribute('data-crbw-continue-watching-page-start', 'true');
-            return item;
-        });
-    }
-
-    function getContinueWatchingPageTargets(track) {
-        const pageStartItems = getContinueWatchingPageStartItems(track);
-        const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
-
-        if (!pageStartItems.length) {
-            return [0];
-        }
-
-        return pageStartItems.map((item) => Math.min(maxScrollLeft, Math.max(0, item.offsetLeft)));
-    }
-
-    function logContinueWatchingPagingState(label, track, extra = {}) {
-        if (!(track instanceof HTMLElement)) {
+    function syncContinueWatchingCardWidths(viewport, track) {
+        if (!(viewport instanceof HTMLElement) || !(track instanceof HTMLElement)) {
             return;
         }
 
         const items = Array.from(track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
             .filter((item) => item instanceof HTMLElement);
-        const sampledItems = items.slice(0, 8).map((item, index) => ({
-            index,
-            offsetLeft: item.offsetLeft,
-            clientWidth: item.clientWidth,
-            rectWidth: Math.round(item.getBoundingClientRect().width * 100) / 100,
-            pageStart: item.hasAttribute('data-crbw-continue-watching-page-start'),
-            lastPageStart: item.getAttribute('data-crbw-continue-watching-last-page-start') === 'true'
-        }));
 
-        const payload = {
-            scrollLeft: track.scrollLeft,
-            clientWidth: track.clientWidth,
-            scrollWidth: track.scrollWidth,
-            maxScrollLeft: Math.max(0, track.scrollWidth - track.clientWidth),
-            pageSize: getContinueWatchingPageSize(),
-            nearestPageIndex: getContinueWatchingNearestPageIndex(track),
-            pageTargets: getContinueWatchingPageTargets(track),
-            trackGap: window.getComputedStyle(track).gap,
-            trackPaddingLeft: window.getComputedStyle(track).paddingLeft,
-            trackPaddingRight: window.getComputedStyle(track).paddingRight,
-            sampledItems,
-            ...extra
-        };
-
-        logLayoutDebug(`Continue Watching Paging ${label}`, payload);
-        console.warn(`[CRBW][CW-Paging] ${label}`, payload);
-    }
-
-    function getContinueWatchingNearestPageIndex(track) {
-        const pageStartItems = getContinueWatchingPageStartItems(track);
-        const pageTargets = pageStartItems.length
-            ? pageStartItems.map((item) => item.offsetLeft)
-            : [0];
-        let nearestIndex = 0;
-        let nearestDistance = Number.POSITIVE_INFINITY;
-
-        pageTargets.forEach((target, index) => {
-            const distance = Math.abs(track.scrollLeft - target);
-            if (distance < nearestDistance) {
-                nearestDistance = distance;
-                nearestIndex = index;
-            }
-        });
-
-        return nearestIndex;
-    }
-
-    function getContinueWatchingPageStartItem(track, pageIndex = null) {
-        const pageStartItems = getContinueWatchingPageStartItems(track);
-        if (!pageStartItems.length) {
-            return null;
+        if (!items.length) {
+            return;
         }
 
-        const boundedPageIndex = Math.min(
-            Math.max(0, pageStartItems.length - 1),
-            Math.max(0, pageIndex ?? getContinueWatchingNearestPageIndex(track))
-        );
+        const gap = 16;
+        const visibleItems = getContinueWatchingVisibleItemCount(viewport.clientWidth);
+        const availableWidth = Math.max(0, viewport.clientWidth - (gap * (visibleItems - 1)));
+        const itemWidth = Math.max(150, Math.floor(availableWidth / visibleItems));
 
-        return pageStartItems[boundedPageIndex] || null;
+        viewport.style.setProperty('--crbw-cw-item-width', `${itemWidth}px`);
     }
 
-    function scrollContinueWatchingToPage(track, pageIndex = null) {
-        const pageStartItem = getContinueWatchingPageStartItem(track, pageIndex);
-        if (!(pageStartItem instanceof HTMLElement)) {
-            return false;
+    function updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton) {
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+        const scrollLeft = viewport.scrollLeft;
+        const threshold = 12;
+
+        leftButton.hidden = scrollLeft <= threshold;
+        rightButton.hidden = maxScrollLeft <= threshold || scrollLeft >= maxScrollLeft - threshold;
+    }
+
+    function getContinueWatchingScrollStep(viewport, track) {
+        const firstItem = track.querySelector(CONTINUE_WATCHING_ITEM_SELECTOR);
+        if (!(firstItem instanceof HTMLElement)) {
+            return viewport.clientWidth;
         }
 
-        pageStartItem.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'start'
-        });
+        const itemRect = firstItem.getBoundingClientRect();
+        const itemWidth = itemRect.width + 16;
+        const visibleItems = getContinueWatchingVisibleItemCount(viewport.clientWidth);
 
-        return true;
+        return itemWidth * visibleItems;
     }
 
-    function bindContinueWatchingCarousel(sectionElement, track) {
-        if (track.dataset.crbwContinueWatchingBound === 'true') {
+    function bindContinueWatchingCarousel(sectionElement, viewport, track) {
+        if (viewport.dataset.crbwContinueWatchingBound === 'true') {
             const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
             const rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
 
             if (leftButton instanceof HTMLButtonElement && rightButton instanceof HTMLButtonElement) {
-                updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
+                syncContinueWatchingCardWidths(viewport, track);
+                updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
                 logLayoutDebug('Continue Watching Carousel Already Bound', {
                     sectionLabel: getSectionLabel(sectionElement),
                     itemCount: track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`).length,
-                    scrollWidth: track.scrollWidth,
-                    clientWidth: track.clientWidth,
+                    scrollWidth: viewport.scrollWidth,
+                    clientWidth: viewport.clientWidth,
                     leftDisabled: leftButton.disabled,
                     rightDisabled: rightButton.disabled
                 });
@@ -927,12 +775,6 @@
 
             return;
         }
-
-        globalThis.__CRBW_DUMP_CONTINUE_WATCHING = () => {
-            logContinueWatchingPagingState('Manual Dump', track, {
-                sectionLabel: getSectionLabel(sectionElement)
-            });
-        };
 
         const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
         const rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
@@ -946,107 +788,44 @@
             return;
         }
 
-        let snapTimeoutId = 0;
-        let snapReleaseTimeoutId = 0;
-        let isSnapping = false;
-
         const handleScroll = () => {
-            updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
+            updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
+        };
 
-            if (snapTimeoutId) {
-                window.clearTimeout(snapTimeoutId);
-            }
-
-            if (isSnapping) {
-                return;
-            }
-
-            snapTimeoutId = window.setTimeout(() => {
-                const snapTarget = getContinueWatchingPageTargets(track)[getContinueWatchingNearestPageIndex(track)] || 0;
-                if (Math.abs(track.scrollLeft - snapTarget) <= 4) {
-                    track.scrollLeft = snapTarget;
-                    updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
-                    logContinueWatchingPagingState('Snap Not Needed', track, {
-                        snapTarget
-                    });
-                    return;
-                }
-
-                isSnapping = true;
-                logContinueWatchingPagingState('Snap Starting', track, {
-                    snapTarget
-                });
-                scrollContinueWatchingToPage(track);
-                snapReleaseTimeoutId = window.setTimeout(() => {
-                    isSnapping = false;
-                    updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
-                    logContinueWatchingPagingState('Snap Settled', track, {
-                        snapTarget,
-                        settledPageIndex: getContinueWatchingNearestPageIndex(track)
-                    });
-                }, 220);
-            }, 140);
+        const handleResize = () => {
+            syncContinueWatchingCardWidths(viewport, track);
+            updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
         };
 
         const handleButtonClick = (direction) => {
-            const currentPageIndex = getContinueWatchingNearestPageIndex(track);
-            const nextPageIndex = getContinueWatchingNearestPageIndex(track) + direction;
-
-            if (snapTimeoutId) {
-                window.clearTimeout(snapTimeoutId);
-            }
-
-            if (snapReleaseTimeoutId) {
-                window.clearTimeout(snapReleaseTimeoutId);
-            }
-
-            isSnapping = true;
-            logContinueWatchingPagingState('Arrow Click', track, {
-                direction,
-                currentPageIndex,
-                nextPageIndex
-            });
-            scrollContinueWatchingToPage(track, nextPageIndex);
-            snapReleaseTimeoutId = window.setTimeout(() => {
-                isSnapping = false;
-                updateContinueWatchingArrowVisibility(track, leftButton, rightButton);
-                logContinueWatchingPagingState('Arrow Settled', track, {
-                    direction,
-                    settledPageIndex: getContinueWatchingNearestPageIndex(track)
-                });
-            }, 220);
+            const step = getContinueWatchingScrollStep(viewport, track) * direction;
+            viewport.scrollBy({ left: step, behavior: 'smooth' });
         };
 
-        track.dataset.crbwContinueWatchingBound = 'true';
-        track.dataset.crbwContinueWatchingPageSize = String(getContinueWatchingPageSize());
+        viewport.dataset.crbwContinueWatchingBound = 'true';
+        syncContinueWatchingCardWidths(viewport, track);
         handleScroll();
-        logContinueWatchingPagingState('Bound', track, {
-            sectionLabel: getSectionLabel(sectionElement)
-        });
         logLayoutDebug('Continue Watching Carousel Bound', {
             sectionLabel: getSectionLabel(sectionElement),
             itemCount: track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`).length,
-            scrollWidth: track.scrollWidth,
-            clientWidth: track.clientWidth,
-            scrollStep: getContinueWatchingScrollStep(track),
-            pageTargets: getContinueWatchingPageTargets(track),
+            scrollWidth: viewport.scrollWidth,
+            clientWidth: viewport.clientWidth,
+            scrollStep: getContinueWatchingScrollStep(viewport, track),
             leftDisabled: leftButton.disabled,
             rightDisabled: rightButton.disabled
         });
 
-        track.addEventListener('scroll', handleScroll);
-        window.addEventListener('resize', () => {
-            track.dataset.crbwContinueWatchingPageSize = String(getContinueWatchingPageSize());
-            handleScroll();
-        });
+        viewport.addEventListener('scroll', handleScroll);
+        window.addEventListener('resize', handleResize);
         leftButton.addEventListener('click', () => handleButtonClick(-1));
         rightButton.addEventListener('click', () => handleButtonClick(1));
 
         if (typeof ResizeObserver === 'function') {
             const resizeObserver = new ResizeObserver(() => {
-                handleScroll();
+                handleResize();
             });
 
+            resizeObserver.observe(viewport);
             resizeObserver.observe(track);
             Array.from(track.querySelectorAll('img')).forEach((image) => resizeObserver.observe(image));
         }
@@ -1056,13 +835,13 @@
                 return;
             }
 
-            image.addEventListener('load', handleScroll, { once: true });
-            image.addEventListener('error', handleScroll, { once: true });
+            image.addEventListener('load', handleResize, { once: true });
+            image.addEventListener('error', handleResize, { once: true });
         });
 
         requestAnimationFrame(() => {
-            handleScroll();
-            requestAnimationFrame(handleScroll);
+            handleResize();
+            requestAnimationFrame(handleResize);
         });
     }
 
@@ -1075,8 +854,8 @@
         }
 
         const sectionLabel = getSectionLabel(sectionElement);
-        const track = sectionElement.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR);
-        if (!(track instanceof HTMLElement)) {
+        const sourceTrack = sectionElement.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR);
+        if (!(sourceTrack instanceof HTMLElement)) {
             logLayoutDebug('Continue Watching Track Not Found', {
                 sectionLabel,
                 selectors: CONTINUE_WATCHING_TRACK_SELECTOR
@@ -1084,35 +863,37 @@
             return;
         }
 
-        const items = Array.from(track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
+        const items = Array.from(sourceTrack.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
             .filter((item) => item instanceof HTMLElement);
 
         if (items.length === 0) {
             logLayoutDebug('Continue Watching Items Not Found', {
                 sectionLabel,
-                trackClassName: track.className,
-                childCount: track.children.length
+                trackClassName: sourceTrack.className,
+                childCount: sourceTrack.children.length
             });
             return;
         }
 
         logLayoutDebug('Continue Watching Enhancement Starting', {
             sectionLabel,
-            trackClassName: track.className,
+            trackClassName: sourceTrack.className,
             itemCount: items.length,
-            scrollWidth: track.scrollWidth,
-            clientWidth: track.clientWidth,
+            scrollWidth: sourceTrack.scrollWidth,
+            clientWidth: sourceTrack.clientWidth,
             existingShell: sectionElement.querySelector('.crbw-continue-watching-carousel-shell') instanceof HTMLElement,
             existingLeftArrow: sectionElement.querySelector('.crbw-continue-watching-arrow-left') instanceof HTMLButtonElement,
             existingRightArrow: sectionElement.querySelector('.crbw-continue-watching-arrow-right') instanceof HTMLButtonElement
         });
 
         ensureContinueWatchingStyles();
+        homepageSectionsShared.ensureHomepageSectionInlineGutterWatcher?.();
+        homepageSectionsShared.scheduleHomepageSectionInlineGutterSync?.();
         sectionElement.setAttribute('data-crbw-continue-watching-enhanced', 'true');
-        const trackParent = track.parentElement;
-
         let shell = sectionElement.querySelector('.crbw-continue-watching-carousel-shell');
         let content = sectionElement.querySelector('.crbw-continue-watching-carousel-content');
+        let viewport = sectionElement.querySelector('.crbw-continue-watching-carousel-viewport');
+        let track = sectionElement.querySelector(':scope .crbw-continue-watching-carousel-track');
         let leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
         let rightButton = sectionElement.querySelector('.crbw-continue-watching-arrow-right');
 
@@ -1121,9 +902,21 @@
             shell.className = 'crbw-continue-watching-carousel-shell';
         }
 
+        shell.classList.add('container--cq5XE');
+
         if (!(content instanceof HTMLElement)) {
             content = document.createElement('div');
             content.className = 'crbw-continue-watching-carousel-content';
+        }
+
+        if (!(viewport instanceof HTMLElement)) {
+            viewport = document.createElement('div');
+            viewport.className = 'crbw-continue-watching-carousel-viewport';
+        }
+
+        if (!(track instanceof HTMLElement)) {
+            track = document.createElement('div');
+            track.className = 'crbw-continue-watching-carousel-track';
         }
 
         if (!(leftButton instanceof HTMLButtonElement)) {
@@ -1144,12 +937,26 @@
 
         track.classList.add('crbw-continue-watching-carousel-track');
 
+        items.forEach((item) => {
+            if (item.parentElement !== track) {
+                track.appendChild(item);
+            }
+        });
+
+        if (sourceTrack !== track) {
+            sourceTrack.style.display = 'none';
+        }
+
         if (!content.contains(leftButton)) {
             content.appendChild(leftButton);
         }
 
-        if (track.parentElement !== content) {
-            content.appendChild(track);
+        if (!viewport.contains(track)) {
+            viewport.appendChild(track);
+        }
+
+        if (viewport.parentElement !== content) {
+            content.appendChild(viewport);
         }
 
         if (!content.contains(rightButton)) {
@@ -1183,7 +990,7 @@
             sectionChildCount: sectionElement.children.length
         });
 
-        bindContinueWatchingCarousel(sectionElement, track);
+        bindContinueWatchingCarousel(sectionElement, viewport, track);
     }
 
     function collectHomepageSections(layoutContainer = null) {
@@ -1208,12 +1015,16 @@
         const sections = candidateElements
             .map((element, index) => {
                 const id = getSectionId(element, duplicateTracker);
+                const sourceElement = element.hasAttribute('data-crbw-homepage-section')
+                    ? element
+                    : getBuiltinSectionSourceElement(element) || element;
                 return {
                     id,
                     label: getSectionLabel(element),
                     kind: element.hasAttribute('data-crbw-homepage-section') ? 'custom' : 'builtin',
                     defaultOrder: index,
-                    element
+                    element,
+                    sourceDataId: sourceElement.getAttribute('data-id') || null
                 };
             });
 
@@ -1228,7 +1039,8 @@
                 id: section.id,
                 label: section.label,
                 kind: section.kind,
-                defaultOrder: section.defaultOrder
+                defaultOrder: section.defaultOrder,
+                sourceDataId: section.sourceDataId
             }))
         });
 
@@ -1370,6 +1182,26 @@
                     .filter((section) => section.element.style.display !== 'none')
                     .sort((left, right) => Number(left.element.style.order || 0) - Number(right.element.style.order || 0));
 
+                const continueWatchingCandidates = orderedVisibleSections.map((section) => ({
+                    id: section.id,
+                    label: section.label,
+                    normalizedLabel: normalizeSectionLabel(section.label),
+                    kind: section.kind,
+                    sourceDataId: section.sourceDataId || null,
+                    hasHistoryTrack: section.element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR) instanceof HTMLElement,
+                    isEnhanced: section.element.getAttribute('data-crbw-continue-watching-enhanced') === 'true'
+                }));
+                const matchedContinueWatchingSections = continueWatchingCandidates.filter((section) =>
+                    section.kind === 'builtin' && section.normalizedLabel === CONTINUE_WATCHING_LABEL
+                );
+
+                logLayoutDebug('Continue Watching Match Evaluation', {
+                    visibleSectionCount: orderedVisibleSections.length,
+                    matchCount: matchedContinueWatchingSections.length,
+                    matches: matchedContinueWatchingSections,
+                    candidates: continueWatchingCandidates
+                });
+
                 if (layoutRoot?.usesDynamicFeedWrapper) {
                     orderedVisibleSections.forEach((section) => {
                         if (section.element.parentElement !== wrapper) {
@@ -1409,6 +1241,13 @@
                         section.kind === 'builtin'
                         && normalizeSectionLabel(section.label) === CONTINUE_WATCHING_LABEL
                     ) {
+                        logLayoutDebug('Continue Watching Enhancement Selected', {
+                            id: section.id,
+                            label: section.label,
+                            sourceDataId: section.sourceDataId || null,
+                            hasTrackBeforeEnhance: section.element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR) instanceof HTMLElement,
+                            alreadyEnhanced: section.element.getAttribute('data-crbw-continue-watching-enhanced') === 'true'
+                        });
                         enhanceContinueWatchingCarousel(section.element);
                     }
                 });

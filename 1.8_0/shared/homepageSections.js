@@ -569,11 +569,14 @@
 
         globalScope.__CRBW_HOMEPAGE_LAYOUT_MANAGER_INITIALIZED__ = true;
         console.log('🚀 Homepage Layout Manager Loading...');
+        console.log('[CRBW][HomepageLayout][CW] Shared Homepage Manager Initialized');
 
         const DYNAMIC_FEED_WRAPPER_SELECTOR = '.dynamic-feed-wrapper';
         const SECTION_HEADING_SELECTOR = 'h2, .browse-collection-title, .feed-header__title--DMRD6';
         const BUILTIN_SECTION_WRAPPER_SELECTOR = 'div[data-id]';
         const CONTINUE_WATCHING_LABEL = 'Continue Watching';
+        const CONTINUE_WATCHING_STYLE_ID = 'crbw-continue-watching-carousel-style';
+        const CONTINUE_WATCHING_ITEM_SELECTOR = '.collection-item';
         const CONTINUE_WATCHING_TRACK_SELECTOR = [
             '.erc-history-collection[data-t="history"]',
             '.erc-history-collection',
@@ -712,6 +715,465 @@
         return `builtin:section:${index}`;
     }
 
+        function ensureContinueWatchingStyles() {
+        let styleElement = document.getElementById(CONTINUE_WATCHING_STYLE_ID);
+
+        if (styleElement instanceof HTMLStyleElement) {
+            return;
+        }
+
+        styleElement = document.createElement('style');
+        styleElement.id = CONTINUE_WATCHING_STYLE_ID;
+        styleElement.textContent = `
+            [data-crbw-continue-watching-enhanced="true"] {
+                width: auto;
+                inline-size: auto;
+                block-size: auto;
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            [data-crbw-continue-watching-enhanced="true"] > div,
+            [data-crbw-continue-watching-enhanced="true"] > div > div {
+                width: auto;
+                inline-size: auto;
+                block-size: auto;
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            .crbw-continue-watching-carousel-shell {
+                position: relative;
+                box-sizing: border-box;
+                overflow: visible;
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                padding-inline: var(--crbw-detected-homepage-inline-gutter, clamp(40px, 4vw, 56px));
+            }
+
+            .crbw-continue-watching-carousel-content {
+                position: relative;
+                display: flex;
+                align-items: center;
+                width: 100%;
+                box-sizing: border-box;
+                min-width: 0;
+            }
+
+            .crbw-continue-watching-carousel-viewport {
+                overflow-x: auto;
+                overflow-y: visible;
+                overscroll-behavior-x: contain;
+                scroll-behavior: smooth;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                padding: 4px 0 8px;
+                width: 100%;
+                box-sizing: border-box;
+                min-width: 0;
+            }
+
+            .crbw-continue-watching-carousel-viewport::-webkit-scrollbar {
+                display: none;
+            }
+
+            .crbw-continue-watching-carousel-track {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                gap: 16px;
+                width: max-content;
+                min-width: max-content;
+            }
+
+            .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} {
+                flex: 0 0 var(--crbw-cw-item-width, 220px) !important;
+                width: var(--crbw-cw-item-width, 220px) !important;
+                min-width: var(--crbw-cw-item-width, 220px) !important;
+                max-width: var(--crbw-cw-item-width, 220px) !important;
+                box-sizing: border-box;
+            }
+
+            .crbw-continue-watching-carousel-track > ${CONTINUE_WATCHING_ITEM_SELECTOR} > * {
+                width: 100%;
+            }
+
+            .crbw-continue-watching-carousel-track .playable-thumbnail--HKMt2,
+            .crbw-continue-watching-carousel-track [class*="playable-thumbnail--is-sized"] {
+                max-width: 100%;
+            }
+
+            .crbw-continue-watching-arrow {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 40px;
+                border: 0;
+                border-radius: 999px;
+                background: rgba(20, 21, 26, 0.88);
+                color: #ffffff;
+                cursor: pointer;
+                flex: 0 0 auto;
+                transition: opacity 120ms ease, background 120ms ease;
+                z-index: 1;
+                position: absolute;
+                top: 102px;
+                transform: translateY(-50%);
+            }
+
+            .crbw-continue-watching-arrow:hover {
+                background: rgba(35, 37, 45, 0.96);
+            }
+
+            .crbw-continue-watching-arrow[hidden] {
+                display: none !important;
+            }
+
+            .crbw-continue-watching-arrow span {
+                font-size: 22px;
+                line-height: 1;
+            }
+
+            .crbw-continue-watching-arrow-left {
+                left: -56px;
+            }
+
+            .crbw-continue-watching-arrow-right {
+                right: -56px;
+            }
+
+            @media (max-width: 107.49em) {
+                .crbw-continue-watching-arrow {
+                    top: 90px;
+                }
+            }
+
+            @media (max-width: 49.99em) {
+                .crbw-continue-watching-arrow {
+                    top: 80px;
+                }
+            }
+
+            @media (max-width: 35.49em) {
+                .crbw-continue-watching-arrow {
+                    width: 36px;
+                    height: 36px;
+                    top: 72px;
+                }
+            }
+
+        `;
+
+        document.documentElement.appendChild(styleElement);
+        logLayoutDebug('Continue Watching Styles Injected', {
+            styleId: CONTINUE_WATCHING_STYLE_ID
+        });
+    }
+
+        function getContinueWatchingVisibleItemCount(viewportWidth) {
+        if (viewportWidth <= 520) {
+            return 2;
+        }
+
+        if (viewportWidth <= 760) {
+            return 3;
+        }
+
+        if (viewportWidth <= 1040) {
+            return 4;
+        }
+
+        return 5;
+    }
+
+        function syncContinueWatchingCardWidths(viewport, track) {
+        if (!(viewport instanceof HTMLElement) || !(track instanceof HTMLElement)) {
+            return;
+        }
+
+        const items = Array.from(track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
+            .filter((item) => item instanceof HTMLElement);
+
+        if (!items.length) {
+            return;
+        }
+
+        const gap = 16;
+        const visibleItems = getContinueWatchingVisibleItemCount(viewport.clientWidth);
+        const availableWidth = Math.max(0, viewport.clientWidth - (gap * (visibleItems - 1)));
+        const itemWidth = Math.max(150, Math.floor(availableWidth / visibleItems));
+
+        viewport.style.setProperty('--crbw-cw-item-width', `${itemWidth}px`);
+    }
+
+        function updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton) {
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+        const scrollLeft = viewport.scrollLeft;
+        const threshold = 12;
+
+        leftButton.hidden = scrollLeft <= threshold;
+        rightButton.hidden = maxScrollLeft <= threshold || scrollLeft >= maxScrollLeft - threshold;
+    }
+
+        function resolveContinueWatchingTrack(hostSectionElement, trackSourceSectionElement = null) {
+        const preferredSourceElement = trackSourceSectionElement instanceof HTMLElement
+            ? trackSourceSectionElement
+            : null;
+        const preferredSourceTarget = getBuiltinSectionSourceElement(preferredSourceElement) || preferredSourceElement;
+        const hostTargetSectionElement = getBuiltinSectionSourceElement(hostSectionElement) || hostSectionElement;
+        const globalTrack = document.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR);
+        const globalTrackSection = globalTrack instanceof HTMLElement
+            ? globalTrack.closest(BUILTIN_SECTION_WRAPPER_SELECTOR)
+            : null;
+
+        const track = (
+            preferredSourceTarget?.querySelector?.(CONTINUE_WATCHING_TRACK_SELECTOR)
+            || preferredSourceElement?.querySelector?.(CONTINUE_WATCHING_TRACK_SELECTOR)
+            || hostTargetSectionElement.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)
+            || hostSectionElement.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR)
+            || (globalTrack instanceof HTMLElement ? globalTrack : null)
+        );
+
+        return {
+            track: track instanceof HTMLElement ? track : null,
+            sourceSectionElement: globalTrackSection instanceof HTMLElement
+                ? globalTrackSection
+                : preferredSourceTarget || preferredSourceElement || hostTargetSectionElement
+        };
+    }
+
+        function getContinueWatchingScrollStep(viewport, track) {
+        const firstItem = track?.querySelector(CONTINUE_WATCHING_ITEM_SELECTOR);
+        if (!(firstItem instanceof HTMLElement)) {
+            return viewport.clientWidth;
+        }
+
+        const itemRect = firstItem.getBoundingClientRect();
+        const itemWidth = itemRect.width + 16;
+        const visibleItems = getContinueWatchingVisibleItemCount(viewport.clientWidth);
+
+        return itemWidth * visibleItems;
+    }
+
+        function bindContinueWatchingCarousel(sectionElement, viewport, track) {
+        const targetSectionElement = getBuiltinSectionSourceElement(sectionElement) || sectionElement;
+        const hostSectionElement = sectionElement;
+        if (viewport.dataset.crbwContinueWatchingBound === 'true') {
+            const leftButton = hostSectionElement.querySelector('.crbw-continue-watching-arrow-left');
+            const rightButton = hostSectionElement.querySelector('.crbw-continue-watching-arrow-right');
+
+            if (leftButton instanceof HTMLButtonElement && rightButton instanceof HTMLButtonElement) {
+                syncContinueWatchingCardWidths(viewport, track);
+                updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
+            }
+
+            return;
+        }
+
+        const leftButton = hostSectionElement.querySelector('.crbw-continue-watching-arrow-left');
+        const rightButton = hostSectionElement.querySelector('.crbw-continue-watching-arrow-right');
+
+        if (!(leftButton instanceof HTMLButtonElement) || !(rightButton instanceof HTMLButtonElement)) {
+            logLayoutDebug('Continue Watching Carousel Missing Arrows Before Bind', {
+                sectionLabel: getSectionLabel(targetSectionElement),
+                hasLeftButton: leftButton instanceof HTMLButtonElement,
+                hasRightButton: rightButton instanceof HTMLButtonElement
+            });
+            return;
+        }
+
+        const handleScroll = () => {
+            updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
+        };
+
+        const handleResize = () => {
+            syncContinueWatchingCardWidths(viewport, track);
+            updateContinueWatchingArrowVisibility(viewport, leftButton, rightButton);
+        };
+
+        const handleButtonClick = (direction) => {
+            const step = getContinueWatchingScrollStep(viewport, track) * direction;
+            viewport.scrollBy({ left: step, behavior: 'smooth' });
+        };
+
+        viewport.dataset.crbwContinueWatchingBound = 'true';
+        syncContinueWatchingCardWidths(viewport, track);
+        handleScroll();
+
+        viewport.addEventListener('scroll', handleScroll);
+        window.addEventListener('resize', handleResize);
+        leftButton.addEventListener('click', () => handleButtonClick(-1));
+        rightButton.addEventListener('click', () => handleButtonClick(1));
+
+        if (typeof ResizeObserver === 'function') {
+            const resizeObserver = new ResizeObserver(() => {
+                handleResize();
+            });
+
+            resizeObserver.observe(viewport);
+            resizeObserver.observe(track);
+            Array.from(track.querySelectorAll('img')).forEach((image) => resizeObserver.observe(image));
+        }
+
+        Array.from(track.querySelectorAll('img')).forEach((image) => {
+            if (image.complete) {
+                return;
+            }
+
+            image.addEventListener('load', handleResize, { once: true });
+            image.addEventListener('error', handleResize, { once: true });
+        });
+
+        requestAnimationFrame(() => {
+            handleResize();
+            requestAnimationFrame(handleResize);
+        });
+
+        logLayoutDebug('Continue Watching Carousel Bound', {
+            sectionLabel: getSectionLabel(targetSectionElement),
+            itemCount: track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`).length,
+            scrollWidth: viewport.scrollWidth,
+            clientWidth: viewport.clientWidth
+        });
+    }
+
+        function enhanceContinueWatchingCarousel(sectionElement, trackSourceSectionElement = null) {
+        if (!(sectionElement instanceof HTMLElement)) {
+            return;
+        }
+
+        const targetSectionElement = getBuiltinSectionSourceElement(sectionElement) || sectionElement;
+        const hostSectionElement = sectionElement;
+        const sectionLabel = getSectionLabel(targetSectionElement);
+        const { track: sourceTrack, sourceSectionElement } = resolveContinueWatchingTrack(hostSectionElement, trackSourceSectionElement);
+        const sourceTargetSectionElement = getBuiltinSectionSourceElement(sourceSectionElement) || sourceSectionElement;
+        if (!(sourceTrack instanceof HTMLElement)) {
+            logLayoutDebug('Continue Watching Track Not Found', {
+                sectionLabel,
+                selectors: CONTINUE_WATCHING_TRACK_SELECTOR,
+                sourceSectionLabel: getSectionLabel(sourceTargetSectionElement),
+                sourceMatchesHost: sourceTargetSectionElement === targetSectionElement
+            });
+            return;
+        }
+
+        const items = Array.from(sourceTrack.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
+            .filter((item) => item instanceof HTMLElement);
+
+        if (items.length === 0) {
+            logLayoutDebug('Continue Watching Items Not Found', {
+                sectionLabel,
+                trackClassName: sourceTrack.className,
+                childCount: sourceTrack.children.length
+            });
+            return;
+        }
+
+        ensureContinueWatchingStyles();
+        globalScope.CRBWHomepageSections?.ensureHomepageSectionInlineGutterWatcher?.();
+        globalScope.CRBWHomepageSections?.scheduleHomepageSectionInlineGutterSync?.();
+        hostSectionElement.setAttribute('data-crbw-continue-watching-enhanced', 'true');
+        targetSectionElement.setAttribute('data-crbw-continue-watching-enhanced', 'true');
+        sourceSectionElement.setAttribute('data-crbw-continue-watching-source', 'true');
+        let shell = hostSectionElement.querySelector('.crbw-continue-watching-carousel-shell');
+        let content = hostSectionElement.querySelector('.crbw-continue-watching-carousel-content');
+        let viewport = hostSectionElement.querySelector('.crbw-continue-watching-carousel-viewport');
+        let track = hostSectionElement.querySelector(':scope .crbw-continue-watching-carousel-track');
+        let leftButton = hostSectionElement.querySelector('.crbw-continue-watching-arrow-left');
+        let rightButton = hostSectionElement.querySelector('.crbw-continue-watching-arrow-right');
+
+        if (!(shell instanceof HTMLElement)) {
+            shell = document.createElement('div');
+            shell.className = 'crbw-continue-watching-carousel-shell';
+        }
+
+        shell.classList.add('container--cq5XE');
+
+        if (!(content instanceof HTMLElement)) {
+            content = document.createElement('div');
+            content.className = 'crbw-continue-watching-carousel-content';
+        }
+
+        if (!(viewport instanceof HTMLElement)) {
+            viewport = document.createElement('div');
+            viewport.className = 'crbw-continue-watching-carousel-viewport';
+        }
+
+        if (!(track instanceof HTMLElement)) {
+            track = document.createElement('div');
+            track.className = 'crbw-continue-watching-carousel-track';
+        }
+
+        if (!(leftButton instanceof HTMLButtonElement)) {
+            leftButton = document.createElement('button');
+            leftButton.className = 'crbw-continue-watching-arrow crbw-continue-watching-arrow-left';
+            leftButton.type = 'button';
+            leftButton.setAttribute('aria-label', 'Previous');
+            leftButton.innerHTML = '<span>&#10094;</span>';
+        }
+
+        if (!(rightButton instanceof HTMLButtonElement)) {
+            rightButton = document.createElement('button');
+            rightButton.className = 'crbw-continue-watching-arrow crbw-continue-watching-arrow-right';
+            rightButton.type = 'button';
+            rightButton.setAttribute('aria-label', 'Next');
+            rightButton.innerHTML = '<span>&#10095;</span>';
+        }
+
+        track.classList.add('crbw-continue-watching-carousel-track');
+
+        items.forEach((item) => {
+            if (item.parentElement !== track) {
+                track.appendChild(item);
+            }
+        });
+
+        if (sourceTrack !== track) {
+            sourceTrack.style.display = 'none';
+        }
+
+        if (!content.contains(leftButton)) {
+            content.appendChild(leftButton);
+        }
+
+        if (!viewport.contains(track)) {
+            viewport.appendChild(track);
+        }
+
+        if (viewport.parentElement !== content) {
+            content.appendChild(viewport);
+        }
+
+        if (!content.contains(rightButton)) {
+            content.appendChild(rightButton);
+        }
+
+        if (!shell.contains(content)) {
+            shell.appendChild(content);
+        }
+
+        if (shell.parentElement !== hostSectionElement) {
+            hostSectionElement.appendChild(shell);
+        }
+
+        bindContinueWatchingCarousel(hostSectionElement, viewport, track);
+        if (sourceSectionElement !== hostSectionElement) {
+            sourceSectionElement.style.display = 'none';
+        }
+        logLayoutDebug('Continue Watching Enhancement Applied DOM', {
+            sectionLabel,
+            itemCount: items.length,
+            shellConnected: shell.isConnected,
+            trackParentClassName: track.parentElement?.className || null,
+            sourceTrackClassName: sourceTrack.className,
+            hostTagName: hostSectionElement.tagName,
+            targetTagName: targetSectionElement.tagName,
+            sourceTagName: sourceSectionElement.tagName,
+            sourceMatchesHost: sourceSectionElement === hostSectionElement
+        });
+    }
+
         function findLayoutRoot() {
         const dynamicFeedWrapper = document.querySelector(DYNAMIC_FEED_WRAPPER_SELECTOR);
         if (dynamicFeedWrapper instanceof HTMLElement) {
@@ -816,6 +1278,14 @@
             sectionIds: resultSections.map((section) => section.id),
             sectionLabels: resultSections.map((section) => section.label)
         });
+        logLayoutDebug('Continue Watching Discovery Snapshot', resultSections.map((section) => ({
+            id: section.id,
+            label: section.label,
+            normalizedLabel: normalizeHomepageSectionLabel(section.label),
+            kind: section.kind,
+            hasHistoryTrack: section.element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR) instanceof HTMLElement,
+            sourceDataId: (getBuiltinSectionSourceElement(section.element) || section.element).getAttribute('data-id') || null
+        })));
         return resultSections;
     }
 
@@ -946,6 +1416,10 @@
             const layoutIds = new Set(mergedLayout.map((section) => section.id));
             const unmatchedSections = currentSections.filter((section) => !layoutIds.has(section.id));
             const orderedVisibleSections = [];
+            const continueWatchingMatches = currentSections.filter((section) =>
+                section.kind === 'builtin'
+                && normalizeHomepageSectionLabel(section.label) === normalizeHomepageSectionLabel(CONTINUE_WATCHING_LABEL)
+            );
 
             logLayoutDebug('Applying Homepage Layout', {
                 discoveredCount: discoveredSections.length,
@@ -953,6 +1427,16 @@
                 unmatchedCount: unmatchedSections.length,
                 storedLayoutIds: mergedLayout.map((section) => `${section.id}:${section.enabled !== false ? 'on' : 'off'}:${section.order}`),
                 currentSectionIds: currentSections.map((section) => section.id)
+            });
+            logLayoutDebug('Continue Watching Apply Evaluation', {
+                matchCount: continueWatchingMatches.length,
+                matches: continueWatchingMatches.map((section) => ({
+                    id: section.id,
+                    label: section.label,
+                    hasHistoryTrack: section.element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR) instanceof HTMLElement,
+                    sourceDataId: (getBuiltinSectionSourceElement(section.element) || section.element).getAttribute('data-id') || null
+                })),
+                hasGlobalHistoryTrack: document.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR) instanceof HTMLElement
             });
 
             mergedLayout.forEach((layoutSection) => {
@@ -1018,34 +1502,56 @@
                         section.element.style.order = String(1000 + index);
                     }
                 });
+            } else {
+                currentSections.forEach((section) => {
+                    if (section.element.parentElement === layoutRoot.container) {
+                        section.element.style.display = 'none';
+                    }
+                });
 
-                return;
+                const fragment = document.createDocumentFragment();
+                orderedVisibleSections.forEach((section) => {
+                    section.element.style.display = '';
+                    fragment.appendChild(section.element);
+                });
+
+                const managedElements = new Set(
+                    currentSections
+                        .filter((section) => section.element.parentElement === layoutRoot.container)
+                        .map((section) => section.element)
+                );
+                const referenceElement = Array.from(layoutRoot.container.children).find((child) => !managedElements.has(child)) || null;
+
+                if (referenceElement) {
+                    layoutRoot.container.insertBefore(fragment, referenceElement);
+                } else {
+                    layoutRoot.container.appendChild(fragment);
+                }
             }
 
-            currentSections.forEach((section) => {
-                if (section.element.parentElement === layoutRoot.container) {
-                    section.element.style.display = 'none';
+            orderedVisibleSections.forEach((section) => {
+                if (
+                    section.kind === 'builtin'
+                    && normalizeHomepageSectionLabel(section.label) === normalizeHomepageSectionLabel(CONTINUE_WATCHING_LABEL)
+                ) {
+                    const fallbackTrackSection = orderedVisibleSections.find((candidate) =>
+                        candidate !== section
+                        && candidate.kind === 'builtin'
+                        && candidate.element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR) instanceof HTMLElement
+                    );
+
+                    logLayoutDebug('Continue Watching Enhancement Resolution', {
+                        hostId: section.id,
+                        hostLabel: section.label,
+                        hostHasTrack: section.element.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR) instanceof HTMLElement,
+                        fallbackTrackSectionId: fallbackTrackSection?.id || null,
+                        fallbackTrackSectionLabel: fallbackTrackSection?.label || null,
+                        hasGlobalHistoryTrack: document.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR) instanceof HTMLElement
+                    });
+
+                    enhanceContinueWatchingCarousel(section.element, fallbackTrackSection?.element || null);
                 }
             });
-
-            const fragment = document.createDocumentFragment();
-            orderedVisibleSections.forEach((section) => {
-                section.element.style.display = '';
-                fragment.appendChild(section.element);
-            });
-
-            const managedElements = new Set(
-                currentSections
-                    .filter((section) => section.element.parentElement === layoutRoot.container)
-                    .map((section) => section.element)
-            );
-            const referenceElement = Array.from(layoutRoot.container.children).find((child) => !managedElements.has(child)) || null;
-
-            if (referenceElement) {
-                layoutRoot.container.insertBefore(fragment, referenceElement);
-            } else {
-                layoutRoot.container.appendChild(fragment);
-            }
 
         }));
     }
