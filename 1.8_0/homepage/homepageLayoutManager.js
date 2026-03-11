@@ -575,7 +575,6 @@
                 width: 100%;
                 max-width: 100%;
                 min-width: 0;
-                padding-inline: var(--crbw-detected-homepage-inline-gutter, clamp(40px, 4vw, 56px));
             }
 
             .crbw-continue-watching-carousel-content {
@@ -755,6 +754,28 @@
         return itemWidth * visibleItems;
     }
 
+    function isContinueWatchingItemReady(item) {
+        if (!(item instanceof HTMLElement)) {
+            return false;
+        }
+
+        const image = item.querySelector('img[src]');
+        const imageSrc = image?.getAttribute('src') || '';
+        const href = item.querySelector('a[href]')?.getAttribute('href') || '';
+        const hasSkeletonClass = /skeleton|placeholder|loading/i.test(item.className);
+        const textContent = (item.textContent || '').replace(/\s+/g, ' ').trim();
+
+        return !hasSkeletonClass
+            && Boolean(imageSrc)
+            && Boolean(href)
+            && textContent.length > 12;
+    }
+
+    function getContinueWatchingRenderableItems(track) {
+        return Array.from(track.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
+            .filter((item) => item instanceof HTMLElement && isContinueWatchingItemReady(item));
+    }
+
     function bindContinueWatchingCarousel(sectionElement, viewport, track) {
         if (viewport.dataset.crbwContinueWatchingBound === 'true') {
             const leftButton = sectionElement.querySelector('.crbw-continue-watching-arrow-left');
@@ -854,7 +875,11 @@
         }
 
         const sectionLabel = getSectionLabel(sectionElement);
-        const sourceTrack = sectionElement.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR);
+        const existingCustomTrack = sectionElement.querySelector(':scope .crbw-continue-watching-carousel-track');
+        const resolvedSourceTrack = sectionElement.querySelector(CONTINUE_WATCHING_TRACK_SELECTOR);
+        const sourceTrack = existingCustomTrack instanceof HTMLElement
+            ? existingCustomTrack
+            : resolvedSourceTrack;
         if (!(sourceTrack instanceof HTMLElement)) {
             logLayoutDebug('Continue Watching Track Not Found', {
                 sectionLabel,
@@ -863,10 +888,18 @@
             return;
         }
 
-        const items = Array.from(sourceTrack.querySelectorAll(`:scope > ${CONTINUE_WATCHING_ITEM_SELECTOR}`))
-            .filter((item) => item instanceof HTMLElement);
+        const items = getContinueWatchingRenderableItems(sourceTrack);
+        const shouldUseExistingCustomTrack = existingCustomTrack instanceof HTMLElement && existingCustomTrack === sourceTrack;
 
         if (items.length === 0) {
+            const shell = sectionElement.querySelector('.crbw-continue-watching-carousel-shell');
+            if (shell instanceof HTMLElement) {
+                shell.style.display = 'none';
+            }
+
+            if (!shouldUseExistingCustomTrack) {
+                sourceTrack.style.removeProperty('display');
+            }
             logLayoutDebug('Continue Watching Items Not Found', {
                 sectionLabel,
                 trackClassName: sourceTrack.className,
@@ -902,6 +935,7 @@
             shell.className = 'crbw-continue-watching-carousel-shell';
         }
 
+        shell.style.removeProperty('display');
         shell.classList.add('container--cq5XE');
 
         if (!(content instanceof HTMLElement)) {
@@ -943,7 +977,7 @@
             }
         });
 
-        if (sourceTrack !== track) {
+        if (!shouldUseExistingCustomTrack && sourceTrack !== track) {
             sourceTrack.style.display = 'none';
         }
 
